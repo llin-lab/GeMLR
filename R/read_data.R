@@ -16,6 +16,14 @@ read_data <- function(dat_road,num_gmm = 5,ncmp=c(2,3,4),alphaLasso=0.8,nseeds=2
   library(glmnet)
 
   rawdat = read.table(dat_road)
+  if (!all(rawdat[[1]] %in% c(0, 1))) {
+    stop("The first column in your data must be 0 or 1(Indi)")
+  }
+
+  if (!all(rawdat[[ncol(rawdat)]] %in% c(0, 1))) {
+    stop("The final column in your data must be 0 or 1(Response)")
+  }
+
   numdata = nrow(rawdat)
   dim = ncol(rawdat)
   Y1 = rawdat[,dim]
@@ -31,10 +39,6 @@ read_data <- function(dat_road,num_gmm = 5,ncmp=c(2,3,4),alphaLasso=0.8,nseeds=2
   Y1 <- as.vector(Y1)
   cv_fit <- cv.glmnet(data.matrix(X), Y1, alpha = alphaLasso, family = "binomial", nfolds = 5)
   B <- coef(cv_fit, s = "lambda.min")
-  #FitInfo <- list(
-  # lambda.min = cv_fit$lambda.min, # 最小交叉验证误差的lambda值
-  # cvm = cv_fit$cvm # 交叉验证误差
-  #)
   vlasso <- cv_fit$lambda.min
   numcmp = ncmp[1]
 

@@ -150,8 +150,8 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
     }
 
     if (loglikepen < oldloglikepen && loop > minloop) {
-      loop
-      print(c(loglike, oldloglike, loglikepen, oldloglikepen))
+      #loop
+      #print(c(loglike, oldloglike, loglikepen, oldloglikepen))
       break
     }
 
@@ -258,7 +258,7 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
 
 
     loop <- loop + 1
-    print(loglikepen)
+    #print(loglikepen)
 
   }
 
