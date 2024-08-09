@@ -23,7 +23,33 @@ githubinstall("GeMLR")
 ------------------------------------------------------------------------
 This example uses the VAST dataset in the \data folder, which contains 18 immune features.
 ```r
+library(GeMLR)
 
+result = read_data(dat_road = "data\\VASTd0_Indi.txt");
+# load some necessary variables of the dataset
+dim = result$dim;
+MLMoption = result$MLMoption;
+ncmp = result$ncmp;
+nseeds = result$nseeds;
+numcmp = result$numcmp;
+numdata = result$numdata;
+rangeSeed = result$rangeSeed;
+rawdat = result$rawdat;
+vargmm = result$vargmm;
+vlasso = result$vlasso;
+X1 = result$X1;
+X1s = result$X1s;
+Y1 = result$Y1
+kkk = result$kkk
+Indi = result$Indi
+
+# use cross-validation to choose the seed with best performance
+result2 = runCV(kkk, ncmp,nseeds,rangeSeed,vargmm, Y1,X1, Indi, MLMoption)
+cv_mean = apply(result2$cvAUCfinal,2,mean)
+cvAUC = result2$cvAUCfinal
+
+# find the final model for every cluster
+result3 = finalModel(cvAUC,ncmp,nseeds,rangeSeed,vargmm, Y1,X1s, Indi, MLMoption)
 ```
 
 
