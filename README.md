@@ -10,7 +10,6 @@ It works well with small data sets, and at the same time performs well in both p
 You can use the **remote** packages, a lightweight replacement of the install_* functions in devtools, to install our package as follows:
 ```r
 install.packages("remote")
-library(remote)
 remotes::install_github("llin-lab/GeMLR")
 ```
 
