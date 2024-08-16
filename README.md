@@ -7,17 +7,13 @@ It works well with small data sets, and at the same time performs well in both p
 ## Installation
 ------------------------------------------------------------------------
 
-Install this package from Github with:
+You can use the **remote** packages, a lightweight replacement of the install_* functions in devtools, to install our package as follows:
 ```r
-install.packages("devtools")
-library(devtools)
-install_github("Yang-Qs/GeM-LR")
+install.packages("remote")
+library(remote)
+remotes::install_github("llin-lab/GeMLR")
 ```
 
-Or you can install it without the developer's name:
-```r
-githubinstall("GeM-LR")
-```
 
 ## Example
 ------------------------------------------------------------------------
