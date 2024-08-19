@@ -1,7 +1,7 @@
 
-# GeM-LR<a/></a>
+# GeMLR<a/></a>
 
-**GeM-LR(Generative Mixture of Logistic Regression)** is a package for predictive clustering. 
+**GeMLR(Generative Mixture of Logistic Regression)** is a package for predictive clustering. 
 It works well with small data sets, and at the same time performs well in both predictive results and interpretability.
 
 ## Installation
@@ -18,7 +18,7 @@ remotes::install_github("llin-lab/GeMLR")
 ------------------------------------------------------------------------
 This example uses the VAST dataset in the \data folder, which contains 18 immune features.
 ```r
-library(GeM-LR)
+library(GeMLR)
 
 result = read_data(dat_road = "data\\VASTd0_Indi.txt");
 # load some necessary variables of the dataset
