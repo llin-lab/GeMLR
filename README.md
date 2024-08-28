@@ -63,7 +63,27 @@ Apart from the data ingredients above, you also need to initiate some parameters
 # read necessary parameters for model in MLMopton
 MLMoption = init_MLMoption()
 ```
+
 In our package, we set all parameters in MLMoption. If you want to change it for your need, you should read the annotations and change the values carefully.
+
+- <mark style="background-color: #f0f0f0; color: black;">**MLMoption$lambdaLasso**</mark>: the value of lambda for every cluster in Lasso.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$stopratio**</mark>: default is 1.0e-5, means the threshold controling the number of EM iterations in em_MLM.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$kappa**</mark>: default is -1.0,means the weights on instances can be part of the optimization if the option is evoked. For the paper, we set negative value that disables the option of weighted instances.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption.verbose**</mark>： deault is 1,means T.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$minloop**</mark>:default is 3, and must be greater than 2.The minimum number of iterations in EM algorithm.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$maxloop**</mark>: The maximum number of iterations in EM algorithm.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$constrain**</mark>: default is 'DIAS', means different names of models in R package: **Mclust**. Possible strings: 'N' (no constrain), 'EI','VI','EEE','VVV','DIA','DIAE','DIAS','EEV','VEV'.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$diagshrink**</mark>: default is 0.9, larger value indicates more shrinkage towards diagonal, only used if the constraint is 'DIAS'.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$algorithm**</mark>: default is 1. 1 for Lasso, 0 for Logistic without variable selection
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$numcmp**</mark>: default is 2, means the number of clusters.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$AUC**</mark>: default is 1. If set AUC=1, use AUC to pick the best seed in estimateBestSD, otherwise, use accuracy.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$DISTR**</mark>: default is 'binomial'. 'binomial' for classification, and 'normal' for regression.
+-  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$NOEM**</mark>: default is 1, means whether to use EM algorithm. If equals 1, then only run initialization, NO EM update.
+
+
+At this point, all the raw materials needed to build the model are ready.
+
+***
 
 
 
@@ -72,6 +92,7 @@ In our package, we set all parameters in MLMoption. If you want to change it for
 result2 = runCV(kkk, ncmp,nseeds,rangeSeed,vargmm, Y1,X1, Indi, MLMoption)
 cv_mean = apply(result2$cvAUCfinal,2,mean)
 cvAUC = result2$cvAUCfinal
+```
 
 ```r
 # find the final model for every cluster
