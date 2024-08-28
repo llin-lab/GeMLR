@@ -42,30 +42,12 @@ read_data <- function(dat_road,num_gmm = 5,ncmp=c(2,3,4),alphaLasso=0.8,nseeds=2
   vlasso <- cv_fit$lambda.min
   numcmp = ncmp[1]
 
-  MLMoption <- list()
-  MLMoption$AlphaLasso=alphaLasso;
-  MLMoption$lambdaLasso=vlasso*rep(1, times = numcmp);
-  MLMoption$stopratio=1.0e-5;
-  MLMoption$kappa=-1.0;
-  MLMoption$verbose=1;
-  MLMoption$minloop=3;
-  MLMoption$maxloop=50;
-  MLMoption$constrain='DIAS';
-  MLMoption$diagshrink=0.9;
-  MLMoption$kmseed=0;
-  MLMoption$algorithm=1;
-  MLMoption$numcmp=numcmp;
-  MLMoption$AUC=1;
-  MLMoption$DISTR='binomial';
-  MLMoption$NOEM=0;
-  MLMoption$InitCluster = data.frame();
-  MLMoption$Yalpha = 1.0;
 
   nseeds=nseeds;
   rangeSeed=rangeSeed;
 
   kkk=kkk;
 
-  return(list(dim=dim,MLMoption=MLMoption,ncmp=ncmp,nseeds=nseeds,numcmp=numcmp,numdata=numdata,rangeSeed=rangeSeed,rawdat=rawdat,vargmm=vargmm,vlasso=vlasso,X1=X1,X1s=X1s,Y1=Y1,kkk=kkk,Indi=Indi))
+  return(list(dim=dim,ncmp=ncmp,nseeds=nseeds,numcmp=numcmp,numdata=numdata,rangeSeed=rangeSeed,rawdat=rawdat,vargmm=vargmm,vlasso=vlasso,X1=X1,X1s=X1s,Y1=Y1,kkk=kkk,Indi=Indi))
 
 }

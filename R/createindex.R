@@ -17,3 +17,4 @@ creatindex <- function(dimofx, m) {
   index <- rbind(1:dimofx, index)
   return(index)
 }
+
