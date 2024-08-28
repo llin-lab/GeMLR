@@ -38,8 +38,9 @@ Make sure that your input data (for example, VAST there) have the right format.I
 0	5.72	1.26	5.53	6.35	1.41	6.12	1.11	5.13	0.7	6.02	1.71	7.03	5.37	1.11	6.44	4.56	3.82	1.32	1
 0	5.96	1.66	5.12	6.02	1.6	6.3	0.9	5.57	0.48	6.33	2	7.18	5.87	1.58	6.96	4.69	4.18	1.41	1
 1	3.59	0.7	3.87	4.39	1.04	4.01	0.78	2.9	0.7	3.52	1.45	5.41	4.18	1	4.13	4.49	3.49	0	0
+... 
 ```
-After run the read_data(), you will acquire some ingredients for your model in the 'list' format (which means you need to unpack them by yourself) .
+After run the read_data ( ), you will acquire some ingredients for your model in the 'list' format (which means you need to unpack them by yourself) .
 
 ```r
 # load some necessary variables of the dataset
@@ -93,6 +94,18 @@ result2 = runCV(kkk, ncmp,nseeds,rangeSeed,vargmm, Y1,X1, Indi, MLMoption)
 cv_mean = apply(result2$cvAUCfinal,2,mean)
 cvAUC = result2$cvAUCfinal
 ```
+run_CV ( ) returns important result—— cvAUVfinal. In cvAUVfinal, each column means a different total number of clusters (such as 2/3/4), and each row means a case that one of the fold is the traning data. 
+```r
+> result2$cvAUCfinal
+0.5111    0.7778    0.8889
+0.6667    0.8333    0.8889
+0.6400    0.7600    0.7000
+0.6667    0.6667    0.7556
+0.5111    0.7333    0.4889
+```
+
+
+***
 
 ```r
 # find the final model for every cluster
