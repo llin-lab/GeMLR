@@ -2,6 +2,7 @@
 
 export(ConstrainSigma)
 export(GMMFormatConvert)
+export(KMclassify)
 export(LoglikehoodYBalance)
 export(MLMclassify)
 export(VS)
