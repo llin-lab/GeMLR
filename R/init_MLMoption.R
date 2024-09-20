@@ -7,7 +7,7 @@
 #' @export
 init_MLMoption <- function(alphaLasso = 0.5, vlasso = 1, numcmp = 2, stopratio = 1.0e-5,
                            verbose = 1, minloop = 3, maxloop = 50, constrain = 'DIAS',
-                          diagshrink = 0.9, kmseed = 0, algorithm = 1,
+                          diagshrink = 0.9, kmseed = 0, algorithm = 1, kappa = -1,
                           AUC = 1, DISTR = 'binomial', NOEM = 0,Yalpha = 1.0) {
   MLMoption <- list()
   MLMoption$AlphaLasso <- alphaLasso # if set to 1, this is Lasso, value smaller than 1 is elastic net

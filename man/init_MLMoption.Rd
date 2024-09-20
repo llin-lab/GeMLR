@@ -16,6 +16,7 @@ init_MLMoption(
   diagshrink = 0.9,
   kmseed = 0,
   algorithm = 1,
+  kappa = -1,
   AUC = 1,
   DISTR = "binomial",
   NOEM = 0,
