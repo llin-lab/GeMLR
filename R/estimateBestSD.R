@@ -66,6 +66,9 @@ estimateBestSD <- function(X, Xlogit, Y, MLMoption, seedlist) {
 
       auc_result <- roc(Y, pyi, levels = c(0,1))
       AUC[ii] <- auc_result$auc
+    }else{
+      regress_result <- MLMregress(a2, mu2, sigma2, beta, X, Xlogit)
+      accuracy[ii] <- sum((pyi - t(Y))^2) / length(Y)  # MSE for regression
     }
   }
 
@@ -83,6 +86,8 @@ estimateBestSD <- function(X, Xlogit, Y, MLMoption, seedlist) {
   } else {
     if (MLMoption$DISTR == 'binomial') {
       bestID <- which.max(accuracy)
+    }else{
+      bestID = which.min(accuracy)
     }
   }
 
