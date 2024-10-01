@@ -33,6 +33,10 @@ estimate <- function(X, Xlogit, Y, MLMoption) {
       auc_result <- roc(Y, pyi)
       AUC <- auc_result$auc
       cat('Classification AUC by initial model (within training):', AUC, '\n')
+    }else{
+      regress_result <- MLMregress(ainit,muinit,sigmainit,betainit,X,Xlogit)
+      v1 <- sum((pyi - t(Y))^2) / numdata
+      cat(sprintf('Regression MSE by initial model (within training): %f\n', v1))
     }
   }
 
@@ -56,6 +60,14 @@ estimate <- function(X, Xlogit, Y, MLMoption) {
       c <- em_result$c
       beta <- em_result$beta
       Wi <- em_result$Wi
+      loglike <- em_result$loglike
+      loglikepen <- em_result$loglikepen
+    }else{
+      em_result <- em_MLM_regress(X, Xlogit, Y, cinit, betainit, rsigma2 , MLMoption)
+      c <- em_result$c
+      beta <- em_result$beta
+      Wi <- em_result$Wi
+      rsigma2 <- em_result$rsigma2
       loglike <- em_result$loglike
       loglikepen <- em_result$loglikepen
     }
