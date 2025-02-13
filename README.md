@@ -112,7 +112,7 @@ run_CV ( ) returns important result—— cvAUVfinal. In cvAUVfinal, each column
 
 ```r
 # find the final model for every cluster
-result3 = finalModel(cvAUC,ncmp,nseeds,rangeSeed,vargmm, Y1,X1s, Indi, MLMoption)
+result3 = finalModel(cvAUC, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, Xs, Indi, MLMoption)
 ```
 
 
