@@ -44,25 +44,24 @@ After run the read_data ( ), you will acquire some ingredients for your model in
 
 ```r
 # load some necessary variables of the dataset
-dim = result$dim; # The number of all features except vaccination and infection.in VAST data,dim = 18.
-ncmp = result$ncmp; # The number of clusters available for selection.In VAST data, ncmp = [2,3,4]
-nseeds = result$nseeds; # The number of random seeds for k-means initiation.
+dim = result$dim; # The number of all features except vaccination and infection (Y and Indi).in VAST data,dim = 18.
 numdata = result$numdata; # The number of samples in your data.
-rangeSeed = result$rangeSeed; # The maximum value of random seeds.
 rawdat = result$rawdat; # The dataframe that have all samples and all features.
-vargmm = result$vargmm; # The indexs of the top 5 highly variance features among all features for GMM.
+vargmm = result$vargmm; # The indexs of the top *numgmm* highly variance features among all features for GMM.
 vlasso = result$vlasso; # The value of lambda that come with minimum bias in lasso.
-X1 = result$X1; # The columns(except first and last) in rawdat, means all features you want to use in the model.
-X1s = result$X1s; # standardized X1.
-Y1 = result$Y1 # The last column in rawdat, means infected or not.
-kkk = result$kkk # The number of folds in cross validation.
-Indi = result$Indi # The first column in rawdat, means vaccinated or not.
+X = result$X; # The columns(except first and last) in rawdat, means all features you want to use in the model.
+Xs = result$Xs; # standardized X (except binary independent variable).
+Y = result$Y # Default is the last column (option) in rawdat, means infected or not.
+Indi = result$Indi # Default is the first column (option) in rawdat, means vaccinated or not.
 ```
 
 Apart from the data ingredients above, you also need to initiate some parameters (in GeMLR, we call it 'MLMoption') for your algorithm. All parameters are packed in a list called MLMoption.
 ```r
 # read necessary parameters for model in MLMopton
-MLMoption = init_MLMoption()
+MLMoption = init_MLMoption(alphaLasso = 0.5, vlasso = 1, numcmp = NULL, stopratio = 1.0e-5,
+                           verbose = 1, minloop = 3, maxloop = 50, constrain = 'DIAS',
+                          diagshrink = 0.9, kmseed = 0, algorithm = 1, kappa = -1,
+                          AUC = 1, DISTR = 'binomial', NOEM = 0,Yalpha = 1.0)
 ```
 
 In our package, we set all parameters in MLMoption. If you want to change it for your need, you should read the annotations and change the values carefully.
