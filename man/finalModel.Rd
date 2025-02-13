@@ -4,17 +4,7 @@
 \alias{finalModel}
 \title{final Model}
 \usage{
-finalModel(
-  cvAUCfinal,
-  ncmp,
-  nseeds,
-  rangeSeed,
-  vargmm,
-  Y1,
-  X1s,
-  Indi,
-  MLMoption
-)
+finalModel(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, Indi, MLMoption)
 }
 \arguments{
 \item{cvAUCfinal}{the AUC results in cross-verified}
@@ -25,11 +15,11 @@ finalModel(
 
 \item{rangeSeed}{the largest number of random seeds}
 
-\item{vargmm}{the number of variables that are used in gmm model}
+\item{vargmm}{the index of variables that are used in gmm model}
 
-\item{Y1}{the response variable}
+\item{Y}{the response variable}
 
-\item{X1s}{the standardized features}
+\item{Xs}{the standardized independent variables}
 
 \item{Indi}{the dummy variables}
 

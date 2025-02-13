@@ -2,20 +2,20 @@
 #' @description
 #' Run Cross-Verified for GeM-LR with number of components being ncmp.
 #'
-#' @param kkk the number of folds of cross-validation
+#' @param k the number of folds of cross-validation
 #' @param ncmp the number of clusters
 #' @param nseeds the number of random seeds
 #' @param rangeSeed the largest number among random seeds
-#' @param vargmm the number of variables that are used in gmm
-#' @param Y1 the response variable
-#' @param X1 all non-dummy variables
+#' @param vargmm the index of variables that are used in gmm
+#' @param Y the response variable
+#' @param X all independent variables
 #' @param Indi dummy variable
 #' @param MLMoption all necessary variables
 #'
 #' @return all AUC informations and the final classification result
 #' @export
 #'
-runCV <- function(kkk, ncmp, nseeds, rangeSeed, vargmm, Y1, X1, Indi, MLMoption) {
+runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption) {
   library(caret)
   library(pROC)
 
@@ -27,21 +27,21 @@ runCV <- function(kkk, ncmp, nseeds, rangeSeed, vargmm, Y1, X1, Indi, MLMoption)
   bestseed <- matrix(0, nrow = kkk, ncol = lcmp)
 
   set.seed(9)
-  tuningK2 <- createFolds(Y1, k = kkk, list = TRUE)
+  tuningK2 <- createFolds(Y, k = kkk, list = TRUE)
   rseeds <- sample(1:rangeSeed, nseeds, replace = FALSE)
-  dim <- ncol(X1)
+  dim <- ncol(X)
 
   for (ifold in 1:kkk) {
     test_index <- tuningK2[[ifold]]
-    training_index <- setdiff(seq_along(Y1), test_index)
+    training_index <- setdiff(seq_along(Y), test_index)
 
-    Xtraining <- scale(X1[training_index, ])
+    Xtraining <- scale(X[training_index, ])
     Ctest1 <- attr(Xtraining, "scaled:center")
     Stest1 <- attr(Xtraining, "scaled:scale")
-    Ytraining <- Y1[training_index]
+    Ytraining <- Y[training_index]
 
-    Xtt <- scale(X1[test_index, ], center = Ctest1, scale = Stest1)
-    Ytt <- Y1[test_index]
+    Xtt <- scale(X[test_index, ], center = Ctest1, scale = Stest1)
+    Ytt <- Y[test_index]
 
     if (is.null(Indi)) {
       Xtrain_indi <- Xtraining

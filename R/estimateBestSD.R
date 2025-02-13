@@ -11,6 +11,14 @@
 #' @return all informations about the gmm and logistic model
 #' @export
 estimateBestSD <- function(X, Xlogit, Y, MLMoption, seedlist) {
+  # test
+  #X = Xtraining[, vargmm]
+  #Xlogit = Xtrain_indi
+  #Y = Ytraining
+  #MLMoption = MLMoption
+  #seedlist = rseeds
+
+
 
   library(pROC)
   if (any(seedlist < 0)) {

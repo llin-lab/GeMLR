@@ -203,6 +203,7 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
         if (pj[j] >= 3) {
           if (MLMoption$algorithm == 1) {
             # cat('the iteration in em_MLM is:',j,'\n')
+            pij_wt[, j] <- pmax(pij_wt[, j], 1e-5)
             fit <- glmnet(t(Xlogit), Y, family = MLMoption$DISTR,  weights = pij_wt[,j],alpha = MLMoption$AlphaLasso, lambda = lambdaLasso[j])
             beta_nonintercept = as.matrix(fit$beta)
             beta[,j] <- rbind(fit$a0, beta_nonintercept)

@@ -4,10 +4,20 @@
 \alias{runCV}
 \title{run CV}
 \usage{
-runCV(kkk, ncmp, nseeds, rangeSeed, vargmm, Y1, X1, Indi, MLMoption)
+runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm,
+  Y,
+  X,
+  Indi,
+  MLMoption
+)
 }
 \arguments{
-\item{kkk}{the number of folds of cross-validation}
+\item{k}{the number of folds of cross-validation}
 
 \item{ncmp}{the number of clusters}
 
@@ -15,11 +25,11 @@ runCV(kkk, ncmp, nseeds, rangeSeed, vargmm, Y1, X1, Indi, MLMoption)
 
 \item{rangeSeed}{the largest number among random seeds}
 
-\item{vargmm}{the number of variables that are used in gmm}
+\item{vargmm}{the index of variables that are used in gmm}
 
-\item{Y1}{the response variable}
+\item{Y}{the response variable}
 
-\item{X1}{all non-dummy variables}
+\item{X}{all independent variables}
 
 \item{Indi}{dummy variable}
 

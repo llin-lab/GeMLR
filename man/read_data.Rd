@@ -6,12 +6,10 @@
 \usage{
 read_data(
   dat_road,
-  num_gmm = 5,
-  ncmp = c(2, 3, 4),
+  num_gmm = NULL,
   alphaLasso = 0.8,
-  nseeds = 20,
-  rangeSeed = 30,
-  kkk = 5
+  ycol = NULL,
+  Indi_col = 1
 )
 }
 \arguments{
@@ -19,15 +17,7 @@ read_data(
 
 \item{num_gmm}{the number of variables that are used in the gmm model, default=5}
 
-\item{ncmp}{a vector that store the different number of clusters}
-
 \item{alphaLasso}{the alpha number that are used in the elastic net regression}
-
-\item{nseeds}{the number of random number seeds}
-
-\item{rangeSeed}{the largest number in seeds' list}
-
-\item{kkk}{the number of folds of cross-validation}
 }
 \value{
 a list of dataset and necessary variables

@@ -6,16 +6,16 @@
 #' @param ncmp the number of clusters
 #' @param nseeds the number of random seeds
 #' @param rangeSeed the largest number of random seeds
-#' @param vargmm the number of variables that are used in gmm model
-#' @param Y1 the response variable
-#' @param X1s the standardized features
+#' @param vargmm the index of variables that are used in gmm model
+#' @param Y the response variable
+#' @param Xs the standardized independent variables
 #' @param Indi the dummy variables
 #' @param MLMoption all necessary variables
 #'
 #' @return a list of clustering results
 #' @export
 
-finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y1, X1s, Indi, MLMoption) {
+finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, Indi, MLMoption) {
   dimgmm <- length(vargmm)
 
   maxvf <- max(colMeans(cvAUCfinal))
@@ -25,7 +25,7 @@ finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y1, X1s, Ind
   set.seed(9)
   rseeds <- sample(1:rangeSeed, nseeds, replace = FALSE)
 
-  est_result <- estimateBestSD(X1s[, vargmm], cbind(X1s, Indi), Y1, MLMoption, rseeds)
+  est_result <- estimateBestSD(Xs[, vargmm], cbind(Xs, Indi), Y, MLMoption, rseeds)
   beta <- est_result$beta
 
   gmm_result <- GMMFormatConvert(dimgmm, est_result$c)
@@ -33,7 +33,7 @@ finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y1, X1s, Ind
   mu2 <- gmm_result$mu
   sigma2 <- gmm_result$sigma
 
-  classify_result <- MLMclassify(a2, mu2, sigma2, beta, X1s[, vargmm], cbind(X1s, Indi))
+  classify_result <- MLMclassify(a2, mu2, sigma2, beta, Xs[, vargmm], cbind(Xs, Indi))
   pij <- classify_result$pij
   clusterid <- apply(pij, 1, which.max)
 
