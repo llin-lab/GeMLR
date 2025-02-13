@@ -89,7 +89,11 @@ At this point, all the raw materials needed to build the model are ready.
 
 ```r
 # use cross-validation to choose the seed with best performance
-result2 = runCV(kkk, ncmp,nseeds,rangeSeed,vargmm, Y1,X1, Indi, MLMoption)
+result2 = runCV(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption)
+# k: the number of folds used in cross validation (user define).
+# ncmp: the optional number of clusters (user define).
+# nseeds: the number of random seeds used in kmeans (user define).
+# rangeSeed: the maximum of random seeds (user define).
 cv_mean = apply(result2$cvAUCfinal,2,mean)
 cvAUC = result2$cvAUCfinal
 ```
