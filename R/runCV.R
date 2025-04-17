@@ -23,7 +23,11 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Ind
   dimgmm <- length(vargmm)
   labels <- vector("list", lcmp * kkk)
   guess <- vector("list", lcmp * kkk)
+
   cvAUCfinal <- matrix(0, nrow = kkk, ncol = lcmp)
+  rownames(cvAUCfinal) <- paste(1:kkk, "fold", sep = " ")
+  colnames(cvAUCfinal) <- paste("cluster=", ncmp, sep = "")
+
   bestseed <- matrix(0, nrow = kkk, ncol = lcmp)
 
   set.seed(9)
@@ -75,6 +79,7 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Ind
 
       roc_obj <- roc(Ytt, pyi,levels = c(0,1))
       cvAUCfinal[ifold, jj] <- roc_obj$auc
+
     }
   }
 
