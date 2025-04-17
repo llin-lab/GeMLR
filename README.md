@@ -22,9 +22,12 @@ library(GeMLR)
 ```
 
 ```r
-result = read_data(dat_road = "data\\VASTd0_Indi.txt");
+# The case that you want to use (default) the variables that have top 5 variance in GMM model
+result = read_data(dat_road = "data\\VASTd0_Indi.txt", ycol=20, Indi_col=1, num_gmm=5);
 ```
-Make sure that your input data (for example, VAST there) have the right format.It means that the first column in your data is vaccinated or not, and the last column means infected or not. The rest columns are some features that you want to use in your GMM and logitstic model.
+Make sure that you tell this function which column is your *y and which column is your *Indi. Besides, you need to specify which variables you want to use in GMM model.
+
+When you input *num_gmm=0, you need to provide the *gmm_var vector at the same time. *gmm_var contains the variable names or variable column indexes that you want to use. When you input *num_gmm as an integer, the first *num_gmm variables with variances will be used; When you do not enter *num_gmm, all variables will be automatically used as the input of GMM.
 
 ```r
 # There are some requires about the data format in read_data().
