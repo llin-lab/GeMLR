@@ -6,7 +6,7 @@
 #'
 #' @return a list of dataset and necessary variables
 #' @export
-read_data <- function(dat_road,num_gmm=NULL,alphaLasso=0.8, ycol=NULL, Indi_col=1){
+read_data <- function(dat_road,num_gmm=NULL,alphaLasso=0.8, ycol=NULL, Indi_col=1, gmm_var=NULL){
   library(dplyr)
   library(glmnet)
 
@@ -41,10 +41,38 @@ read_data <- function(dat_road,num_gmm=NULL,alphaLasso=0.8, ycol=NULL, Indi_col=
     }
   }
   X_var <- sapply(X, var)
+
+  vargmm = numeric(0)
+
   if (is.null(num_gmm)) {
+    # default: use all
     vargmm <- order(X_var, decreasing = TRUE)
   } else {
-    vargmm <- order(X_var, decreasing = TRUE)[1:num_gmm]
+    # user-defined: Loop through each item in the user input vector
+    if (num_gmm==0){
+      if (is.null(gmm_var)){
+        "Please provide the column names or column indexes of the variables you want to use for the GMM model!"
+      } else {
+        for (item in gmm_var) {
+          if (item %in% colnames(rawdat)) {
+            vargmm <- c(vargmm, which(colnames(rawdat) == item))
+          } else if (is.numeric(as.numeric(item)) && item %in% 1:dim) {
+            vargmm <- c(vargmm, item)
+          } else {
+            warning(paste("Invalid input:", item))
+          }
+        }
+      }
+    } else if (is.numeric(num_gmm) && num_gmm > 0 && floor(num_gmm) == num_gmm){ # use variance, but with user-defined number
+      if (num_gmm<=dim){
+        vargmm <- order(X_var, decreasing = TRUE)[1:num_gmm]
+      } else {
+        vargmm <- order(X_var, decreasing = TRUE)[1:dim]
+        print("The number of columns you input is too large. By default, all variables are selected to participate in the GMM model.")
+      }
+    } else {
+      print('Invalid num_gmm!')
+    }
   }
 
 

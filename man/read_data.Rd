@@ -9,7 +9,8 @@ read_data(
   num_gmm = NULL,
   alphaLasso = 0.8,
   ycol = NULL,
-  Indi_col = 1
+  Indi_col = 1,
+  gmm_var = NULL
 )
 }
 \arguments{
