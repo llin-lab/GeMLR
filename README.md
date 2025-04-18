@@ -131,7 +131,7 @@ plot_beta_heatmap(result3$beta, output_file = "beta_heatmap.png")
 ```
 
 The you wil see a picture as follows:
-![](https://github.com/your-username/GeMLR/blob/main/example.png "Example Image")
+![](https://github.com/llin-lab/GeMLR/blob/main/example.png "Example Image")
 
 
 ## Citation
