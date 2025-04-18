@@ -7,7 +7,7 @@
 init_MLMoption(
   alphaLasso = 0.5,
   vlasso = 1,
-  numcmp = NULL,
+  numcmp = 1,
   stopratio = 1e-05,
   verbose = 1,
   minloop = 3,

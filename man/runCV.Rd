@@ -5,7 +5,7 @@
 \title{run CV}
 \usage{
 runCV(
-  k = 5,
+  kkk = 5,
   ncmp = c(2, 3, 4),
   nseeds = 20,
   rangeSeed = 30,
@@ -17,8 +17,6 @@ runCV(
 )
 }
 \arguments{
-\item{k}{the number of folds of cross-validation}
-
 \item{ncmp}{the number of clusters}
 
 \item{nseeds}{the number of random seeds}
@@ -34,6 +32,8 @@ runCV(
 \item{Indi}{dummy variable}
 
 \item{MLMoption}{all necessary variables}
+
+\item{k}{the number of folds of cross-validation}
 }
 \value{
 all AUC informations and the final classification result

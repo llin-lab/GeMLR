@@ -6,6 +6,7 @@
 \usage{
 read_data(
   dat_road,
+  sep_mark = " ",
   num_gmm = NULL,
   alphaLasso = 0.8,
   ycol = NULL,

@@ -15,7 +15,7 @@
 #' @return all AUC informations and the final classification result
 #' @export
 #'
-runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption) {
+runCV <- function(kkk=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption) {
   library(caret)
   library(pROC)
 

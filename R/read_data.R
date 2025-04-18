@@ -6,11 +6,11 @@
 #'
 #' @return a list of dataset and necessary variables
 #' @export
-read_data <- function(dat_road,num_gmm=NULL,alphaLasso=0.8, ycol=NULL, Indi_col=1, gmm_var=NULL){
+read_data <- function(dat_road,sep_mark=' ', num_gmm=NULL,alphaLasso=0.8, ycol=NULL, Indi_col=1, gmm_var=NULL){
   library(dplyr)
   library(glmnet)
 
-  rawdat = read.table(dat_road,sep = ',')
+  rawdat = read.table(dat_road,sep = sep_mark)
   if (!all(rawdat[[Indi_col]] %in% c(0, 1))) {
     stop("The Indi column in your data must be 0 or 1(Indi)")
   }
