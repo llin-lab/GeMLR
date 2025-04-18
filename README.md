@@ -137,5 +137,6 @@ The you wil see a picture as follows:
 ## Citation
 ------------------------------------------------------------------------
 The content of this package is sourced from the following article. If you use it, please quote:
+
 [1] Lin, Lin, et al. "GeM-LR: Discovering predictive biomarkers for small datasets in vaccine studies." PLoS computational biology 20.11 (2024): e1012581.
 
