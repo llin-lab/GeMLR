@@ -102,12 +102,14 @@ cvAUC = result2$cvAUCfinal
 ```
 run_CV ( ) returns important result—— cvAUVfinal. In cvAUVfinal, each column means a different total number of clusters (such as 2/3/4), and each row means a case that one of the fold is the traning data. 
 ```r
+# Given the case ncmp=c(2,3,4). User can define ncmp as they want.
 > result2$cvAUCfinal
-0.5111    0.7778    0.8889
-0.6667    0.8333    0.8889
-0.6400    0.7600    0.7000
-0.6667    0.6667    0.7556
-0.5111    0.7333    0.4889
+        cluster=2 cluster=3 cluster=4
+1 fold   0.5111    0.7778    0.8889
+2 fold   0.6667    0.8333    0.8889
+3 fold   0.6400    0.7600    0.7000
+4 fold   0.6667    0.6667    0.7556
+5 fold   0.5111    0.7333    0.4889
 ```
 
 
