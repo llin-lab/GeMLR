@@ -130,6 +130,9 @@ plot_beta_heatmap(result3$beta)
 plot_beta_heatmap(result3$beta, output_file = "beta_heatmap.png")
 ```
 
+The you wil see a picture as follows:
+![Beta Coefficients of Each Cluster]([./images/your-image.png](https://github.com/llin-lab/GeMLR/blob/main/example.png))
+
 
 ## Citation
 ------------------------------------------------------------------------
