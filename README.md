@@ -61,7 +61,7 @@ Indi = result$Indi # Default is the first column (option) in rawdat, means vacci
 Apart from the data ingredients above, you also need to initiate some parameters (in GeMLR, we call it 'MLMoption') for your algorithm. All parameters are packed in a list called MLMoption.
 ```r
 # read necessary parameters for model in MLMopton
-MLMoption = init_MLMoption(alphaLasso = 0.5, vlasso = 1, numcmp = NULL, stopratio = 1.0e-5,
+MLMoption = init_MLMoption(alphaLasso = 0.5, vlasso = 1, numcmp = 2, stopratio = 1.0e-5,
                            verbose = 1, minloop = 3, maxloop = 50, constrain = 'DIAS',
                           diagshrink = 0.9, kmseed = 0, algorithm = 1, kappa = -1,
                           AUC = 1, DISTR = 'binomial', NOEM = 0,Yalpha = 1.0)
