@@ -206,12 +206,14 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
             pij_wt[, j] <- pmax(pij_wt[, j], 1e-5)
             fit <- glmnet(t(Xlogit), Y, family = MLMoption$DISTR,  weights = pij_wt[,j],alpha = MLMoption$AlphaLasso, lambda = lambdaLasso[j])
             beta_nonintercept = as.matrix(fit$beta)
+            print(fit$beta)
             beta[,j] <- rbind(fit$a0, beta_nonintercept)
           } else {
             weights <- pij_wt[, j] / pj[j]
             Xlogit_transposed <- t(Xlogit)
             # Fit the logistic regression model
             model <- glm(Y ~ Xlogit_transposed, family = binomial(link = "logit"), weights = weights)
+            print(model$beta)
             # Extract the coefficients (including intercept)
             beta[, j] <- coef(model)
           }
