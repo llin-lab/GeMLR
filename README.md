@@ -25,7 +25,9 @@ library(GeMLR)
 # The case that you want to use (default) the variables that have top 5 variance in GMM model
 result = read_data(dat_road = "data\\VASTd0_Indi.txt", ycol=20, Indi_col=1, num_gmm=5);
 ```
-Make sure that you tell this function which column is your **y** and which column is your **Indi**. Besides, you need to specify which variables you want to use in GMM model.
+Make sure that you tell this function which column is your **y** and which column is your **Indi**. Under the latest version, **Indi** can take a vector as input representing multiple indicator columns as input. 
+
+Besides, you need to specify which variables you want to use in GMM model.
 
 When you input **num_gmm=0**, you need to provide the **gmm_var** vector at the same time. **gmm_var** contains the variable names or variable column indexes that you want to use. When you input **num_gmm** as an integer, the first **num_gmm** variables with variances will be used; When you do not enter **num_gmm**, all variables will be automatically used as the input of GMM.
 
