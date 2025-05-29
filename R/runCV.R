@@ -15,7 +15,7 @@
 #' @return all AUC informations and the final classification result
 #' @export
 #'
-runCV <- function(kkk=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption) {
+runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption) {
   library(caret)
   library(pROC)
 
@@ -35,7 +35,7 @@ runCV <- function(kkk=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, I
   rseeds <- sample(1:rangeSeed, nseeds, replace = FALSE)
   dim <- ncol(X)
 
-  for (ifold in 1:kkk) {
+  for (ifold in 1:k) {
     test_index <- tuningK2[[ifold]]
     training_index <- setdiff(seq_along(Y), test_index)
 
@@ -51,8 +51,8 @@ runCV <- function(kkk=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, I
       Xtrain_indi <- Xtraining
       Xtt_indi <- Xtt
     } else {
-      Xtrain_indi <- cbind(Xtraining, Indi[training_index])
-      Xtt_indi <- cbind(Xtt, Indi[test_index])
+      Xtrain_indi <- cbind(Xtraining, Indi[training_index,])
+      Xtt_indi <- cbind(Xtt, Indi[test_index,])
     }
 
     for (jj in 1:lcmp) {

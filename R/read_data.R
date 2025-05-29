@@ -11,7 +11,7 @@ read_data <- function(dat_road,sep_mark=' ', num_gmm=NULL,alphaLasso=0.8, ycol=N
   library(glmnet)
 
   rawdat = read.table(dat_road,sep = sep_mark)
-  if (!all(rawdat[[Indi_col]] %in% c(0, 1))) {
+  if (!all(unlist(rawdat[,Indi_col]) %in% c(0, 1))) {
     stop("The Indi column in your data must be 0 or 1(Indi)")
   }
 

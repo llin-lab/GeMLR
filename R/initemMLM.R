@@ -31,13 +31,13 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
   }
 
   if (nrow(MLMoption$InitCluster) == 0) {
-    nloops <- 10
+    nloops <- 2
   } else {
     nloops <- 0
   }
 
   for (ii in 1:nloops) {
-    km_result <- km(X, numcmp, 1.0e-4, kmseed)
+    km_result <- km(X, numcmp, 1.0, kmseed)
     cdbk <- km_result$cdbk
     cd1 <- km_result$ind
     ndatpercls <- rep(0, numcmp)
@@ -118,8 +118,10 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
     count_0 <- ifelse("0" %in% names(counts), counts["0"], 0)
     count_1 <- ifelse("1" %in% names(counts), counts["1"], 0)
     min_count <- min(count_0, count_1)
+    print(min_count)
     if (min_count >= 2) {
-      lasso_result <- glmnet(Xsmall, Ysmall, MLMoption$DISTR, lambda = MLMoption$lambdaLasso[j], alpha = MLMoption$AlphaLasso)
+      lasso_cv_result <- lasso_cv_result <- cv.glmnet(x = as.matrix(Xsmall), y = Ysmall, family = MLMoption$DISTR, alpha = MLMoption$AlphaLasso)
+      lasso_result <- glmnet(Xsmall, Ysmall, family = MLMoption$DISTR, lambda = lasso_cv_result$lambda.min, alpha = MLMoption$AlphaLasso)
       beta_nointercept <- as.matrix(lasso_result$beta)
       beta_intercept <- lasso_result$a0
       beta[, j] <- rbind(beta_intercept, beta_nointercept)
