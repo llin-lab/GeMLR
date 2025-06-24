@@ -63,10 +63,11 @@ Indi = result$Indi # Default is the first column (option) in rawdat, means vacci
 Apart from the data ingredients above, you also need to initiate some parameters (in GeMLR, we call it 'MLMoption') for your algorithm. All parameters are packed in a list called MLMoption.
 ```r
 # read necessary parameters for model in MLMopton
-MLMoption = init_MLMoption(alphaLasso = 0.5, vlasso = 1, numcmp = 2, stopratio = 1.0e-5,
-                           verbose = 1, minloop = 3, maxloop = 50, constrain = 'DIAS',
-                          diagshrink = 0.9, kmseed = 0, algorithm = 1, kappa = -1,
-                          AUC = 1, DISTR = 'binomial', NOEM = 0,Yalpha = 1.0)
+lasso_cv_result <- cv.glmnet(x = as.matrix(X), y = Y, family = "binomial", alpha = 0.5)
+MLMoption = GeMLR::init_MLMoption(alphaLasso = 0.5, vlasso = lasso_cv_result$lambda.1se, numcmp = 1, stopratio = 1.0e-5,
+                           verbose = 1, minloop = 3, maxloop = 5, constrain = 'DIAS',
+                           diagshrink = 0.9, kmseed = 0, algorithm = 1, kappa = -1,
+                           AUC = 1, DISTR = 'binomial', NOEM = 0,Yalpha = 1.0)
 ```
 
 In our package, we set all parameters in MLMoption. If you want to change it for your need, you should read the annotations and change the values carefully.
@@ -94,7 +95,7 @@ At this point, all the raw materials needed to build the model are ready.
 
 ```r
 # use cross-validation to choose the seed with best performance
-result2 = runCV(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption)
+result2 = runCV(k=5, ncmp=c(2,3,4), nseeds=10, rangeSeed=20, vargmm, Y, X, Indi, MLMoption)
 # k: the number of folds used in cross validation (user define).
 # ncmp: the optional number of clusters (user define).
 # nseeds: the number of random seeds used in kmeans (user define).
