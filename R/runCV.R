@@ -51,8 +51,8 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Ind
       Xtrain_indi <- Xtraining
       Xtt_indi <- Xtt
     } else {
-      Xtrain_indi <- cbind(Xtraining, Indi[training_index,])
-      Xtt_indi <- cbind(Xtt, Indi[test_index,])
+      Xtrain_indi <- cbind(Xtraining, as.data.frame(Indi)[training_index,])
+      Xtt_indi <- cbind(Xtt, as.data.frame(Indi)[test_index,])
     }
 
     for (jj in 1:lcmp) {
