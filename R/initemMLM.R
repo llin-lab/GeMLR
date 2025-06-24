@@ -119,8 +119,8 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
     count_1 <- ifelse("1" %in% names(counts), counts["1"], 0)
     min_count <- min(count_0, count_1)
     print(min_count)
-    if (min_count >= 2) {
-      lasso_cv_result <- lasso_cv_result <- cv.glmnet(x = as.matrix(Xsmall), y = Ysmall, family = MLMoption$DISTR, alpha = MLMoption$AlphaLasso)
+    if (min_count >= 3) {
+      lasso_cv_result <- cv.glmnet(x = as.matrix(Xsmall), y = Ysmall, family = MLMoption$DISTR, alpha = MLMoption$AlphaLasso, nfolds = length(Ysmall))
       lasso_result <- glmnet(Xsmall, Ysmall, family = MLMoption$DISTR, lambda = lasso_cv_result$lambda.min, alpha = MLMoption$AlphaLasso)
       beta_nointercept <- as.matrix(lasso_result$beta)
       beta_intercept <- lasso_result$a0
