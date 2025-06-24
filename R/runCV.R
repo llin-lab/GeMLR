@@ -21,17 +21,17 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Ind
 
   lcmp <- length(ncmp)
   dimgmm <- length(vargmm)
-  labels <- vector("list", lcmp * kkk)
-  guess <- vector("list", lcmp * kkk)
+  labels <- vector("list", lcmp * k)
+    guess <- vector("list", lcmp * k)
 
-  cvAUCfinal <- matrix(0, nrow = kkk, ncol = lcmp)
-  rownames(cvAUCfinal) <- paste(1:kkk, "fold", sep = " ")
+  cvAUCfinal <- matrix(0, nrow = k, ncol = lcmp)
+  rownames(cvAUCfinal) <- paste(1:k, "fold", sep = " ")
   colnames(cvAUCfinal) <- paste("cluster=", ncmp, sep = "")
 
-  bestseed <- matrix(0, nrow = kkk, ncol = lcmp)
+  bestseed <- matrix(0, nrow = k, ncol = lcmp)
 
   set.seed(9)
-  tuningK2 <- createFolds(Y, k = kkk, list = TRUE)
+  tuningK2 <- createFolds(Y, k = k, list = TRUE)
   rseeds <- sample(1:rangeSeed, nseeds, replace = FALSE)
   dim <- ncol(X)
 
