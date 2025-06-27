@@ -119,7 +119,7 @@ run_CV ( ) returns important result—— cvAUVfinal. In cvAUVfinal, each column
 
 ```r
 # find the final model for every cluster
-result3 = finalModel(cvAUC, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, Xs, Indi, MLMoption)
+result3 = finalModel(cvAUC, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, Xs, X, Indi, MLMoption)
 ```
 
 If you want to see the $\beta$ coefficients for each cluster or save the figure, you can use *plot_beta_heatmap* as follows:

@@ -56,5 +56,5 @@ finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, X, In
   pij <- classify_result$pij
   clusterid <- apply(pij, 1, which.max)
 
-  return(list(beta = beta, clusterid = clusterid, a2 = a2, mu2 = mu2, sigma2 = sigma2))
+  return(list(beta = as.matrix(beta), clusterid = clusterid, a2 = a2, mu2 = mu2, sigma2 = sigma2))
 }
