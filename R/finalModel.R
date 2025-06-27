@@ -9,6 +9,7 @@
 #' @param vargmm the index of variables that are used in gmm model
 #' @param Y the response variable
 #' @param Xs the standardized independent variables
+#' @param X the raw input of independent variables
 #' @param Indi the dummy variables
 #' @param MLMoption all necessary variables
 #'

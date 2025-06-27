@@ -32,6 +32,8 @@ finalModel(
 
 \item{Xs}{the standardized independent variables}
 
+\item{X}{the raw input of independent variables}
+
 \item{Indi}{the dummy variables}
 
 \item{MLMoption}{all necessary variables}
