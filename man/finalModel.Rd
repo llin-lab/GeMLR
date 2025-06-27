@@ -4,7 +4,18 @@
 \alias{finalModel}
 \title{final Model}
 \usage{
-finalModel(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, Indi, MLMoption)
+finalModel(
+  cvAUCfinal,
+  ncmp,
+  nseeds,
+  rangeSeed,
+  vargmm,
+  Y,
+  Xs,
+  X,
+  Indi,
+  MLMoption
+)
 }
 \arguments{
 \item{cvAUCfinal}{the AUC results in cross-verified}

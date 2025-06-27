@@ -78,7 +78,8 @@ read_data <- function(dat_road,sep_mark=' ', num_gmm=NULL,alphaLasso=0.8, ycol=N
 
   #X <- cbind(X, Indi)
   Y <- as.vector(Y)
-  cv_fit <- suppressWarnings(cv.glmnet(data.matrix(X), Y, alpha = 1, family = "binomial", nfolds = 5))
+  set.seed(1)
+  cv_fit <- suppressWarnings(cv.glmnet(data.matrix(cbind(X, Indi)), Y, alpha = 1, family = "binomial", nfolds = 5))
   B <- coef(cv_fit, s = "lambda.min")
   vlasso <- cv_fit$lambda.min
 

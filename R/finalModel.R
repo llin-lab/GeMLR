@@ -15,7 +15,7 @@
 #' @return a list of clustering results
 #' @export
 
-finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, Indi, MLMoption) {
+finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, X, Indi, MLMoption) {
   dimgmm <- length(vargmm)
 
   maxvf <- max(colMeans(cvAUCfinal))
@@ -37,6 +37,14 @@ finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed, vargmm, Y, Xs, Indi,
     warning("beta has more rows than beta_rownames. Row names not assigned.")
   }
   colnames(beta) <- paste0("Cluster ", 1:ncol(beta))
+
+  # Add LR model
+  set.seed(1)
+  cv_fit <- suppressWarnings(cv.glmnet(data.matrix(cbind(X, Indi)), Y, alpha = 1, family = "binomial", nfolds = 5))
+  B <- coef(cv_fit, s = "lambda.min")
+
+  beta <- cbind(beta, B)
+  colnames(beta)[ncol(beta)] <- "LR"
 
   gmm_result <- GMMFormatConvert(dimgmm, est_result$c)
   a2 <- gmm_result$a

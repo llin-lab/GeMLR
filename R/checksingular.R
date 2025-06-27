@@ -42,7 +42,7 @@ checksingular <- function(sigma, Xvar, shrinkrate) {
 
   if (rcond(sigma) < 1.0e-8 || t < thred) {
     warning('Unable to solve singular covariance matrix, recommend to modify data')
-    print(sigma)
+    #print(sigma)
     stop('checksingular: failed to modify sigma to be away from singular')
   }
 
