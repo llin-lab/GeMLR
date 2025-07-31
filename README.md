@@ -1,38 +1,50 @@
 
-# GeMLR<a/></a>
+# GeMLR: Generative Mixture of Logistic Regression<a/></a>
 
-**GeMLR(Generative Mixture of Logistic Regression)** is a package for predictive clustering. 
-It works well with small data sets, and at the same time performs well in both predictive results and interpretability.
+**GeMLR** is an R package for predictive clustering, particularly well-suited for small datasets common in vaccine studies. It simultaneously delivers strong predictive performance and interpretability by identifying latent subgroups with shared biomarker-outcome relationships.
+
+The model integrates a Gaussian Mixture Model (GMM) for clustering and logistic regression within each cluster, allowing discovery of subgroup-specific predictive biomarkers.
 
 ## Installation
 ------------------------------------------------------------------------
 
-You can use the **remote** packages, a lightweight replacement of the install_* functions in devtools, to install our package as follows:
+You can use the **remote** packages, a lightweight replacement of the install_* functions in devtools, to install the package as follows:
+
 ```r
 install.packages("remote")
 remotes::install_github("llin-lab/GeMLR")
 ```
 
-
-## Example
+## Example Usage
 ------------------------------------------------------------------------
-This example uses the VAST dataset in the \data folder, which contains 18 immune features.
+This example walks through using the VAST dataset (included in the \data folder) which contains 18 immune features.
+
+### Step 1. Load the package
+
 ```r
 library(GeMLR)
 ```
+### Step 2. Read the data
 
 ```r
-# The case that you want to use (default) the variables that have top 5 variance in GMM model
+# Replace with full path to your text file with header (column names)
 result = read_data(dat_road = "data\\VASTd0_Indi.txt", ycol=20, Indi_col=1, num_gmm=5);
 ```
-Make sure that you tell this function which column is your **y** and which column is your **Indi**. Under the latest version, **Indi** can take a vector as input representing multiple indicator columns as input. 
 
-Besides, you need to specify which variables you want to use in GMM model.
+**Important:**
 
-When you input **num_gmm=0**, you need to provide the **gmm_var** vector at the same time. **gmm_var** contains the variable names or variable column indexes that you want to use. When you input **num_gmm** as an integer, the first **num_gmm** variables with variances will be used; When you do not enter **num_gmm**, all variables will be automatically used as the input of GMM.
+- `dat_road` must be the path to a tab-delimited .txt file with column headers.
+- `ycol` is the column index for the binary outcome (e.g. infection).
+- `Indi_col` is the index (or indices) for indicator variables (e.g. vaccine group). Under the latest version, `Indi_col` can take a vector as input representing multiple indicator columns as input. 
+- `num_gmm` defines how many top-variable features (by variance) to use in the Gaussian Mixture Model (GMM)-based clustering. 
+  
+  + If you set `num_gmm` to a positive integer (recommended is 5), the function will select the top `num_gmm` variables with the highest variance for GMM input.
+  + If you set `num_gmm` = 0, you must provide a separate `gmm_var` argument to specify which variables to use. `gmm_var` can be a vector of column names or column indices.
+  + If you omit `num_gmm` entirely, all available variables (excluding Indi and Y) will be used in GMM by default.
+
 
 ```r
-# There are some requires about the data format in read_data().
+# There are some requirements about the data format in read_data().
 # The first column indicates vaccination, and the last column indicates infection.
 > head_data = head(read.table( "data\\VASTd0_Indi.txt"))
 > head_data
@@ -45,84 +57,153 @@ When you input **num_gmm=0**, you need to provide the **gmm_var** vector at the 
 1	3.59	0.7	3.87	4.39	1.04	4.01	0.78	2.9	0.7	3.52	1.45	5.41	4.18	1	4.13	4.49	3.49	0	0
 ... 
 ```
-After run the read_data ( ), you will acquire some ingredients for your model in the 'list' format (which means you need to unpack them by yourself) .
+
+### Step 3. Extract Model Inputs
+
+After running `read_data()`, the function returns a **list** of components that serve as inputs to the GeMLR model.
+**You must unpack this list manually** to access the relevant variables for clustering, modeling, and visualization.
 
 ```r
-# load some necessary variables of the dataset
-dim = result$dim; # The number of all features except vaccination and infection (Y and Indi).in VAST data,dim = 18.
-numdata = result$numdata; # The number of samples in your data.
-rawdat = result$rawdat; # The dataframe that have all samples and all features.
-vargmm = result$vargmm; # The indexs of the top *numgmm* highly variance features among all features for GMM.
-vlasso = result$vlasso; # The value of lambda that come with minimum bias in lasso.
-X = result$X; # The columns(except first and last) in rawdat, means all features you want to use in the model.
-Xs = result$Xs; # standardized X (except binary independent variable).
-Y = result$Y # Default is the last column (option) in rawdat, means infected or not.
-Indi = result$Indi # Default is the first column (option) in rawdat, means vaccinated or not.
+# Unpack necessary components from the result list
+dim     <- result$dim      # Number of immune features (excluding indicator and outcome). For VAST data, dim = 18
+numdata <- result$numdata  # Number of samples (rows) in the dataset
+rawdat  <- result$rawdat   # Full raw data matrix (with all columns)
+
+# Variables selected for model components
+vargmm  <- result$vargmm   # Column indices of top `num_gmm` high-variance variables used in GMM
+vlasso  <- result$vlasso   # Lambda value that minimizes prediction bias in Lasso
+
+# Predictor matrix
+X       <- result$X        # Predictor features used in model (excluding indicator and outcome)
+Xs      <- result$Xs       # Standardized version of X (except binary independent variable)
+
+# Outcome and indicators
+Y       <- result$Y        # Binary outcome (default: last column)
+Indi    <- result$Indi     # Indicator variable(s) (default: first column). For VAST data, means vaccinated or not.
 ```
 
-Apart from the data ingredients above, you also need to initiate some parameters (in GeMLR, we call it 'MLMoption') for your algorithm. All parameters are packed in a list called MLMoption.
+**Note**: If your dataset contains more than one indicator (e.g., multiple vaccine groups), `Indi_col` can take a vector of column indices, and `Indi` will return a multi-column matrix.
+
+### Step 4. Initialize Model Parameters
+
+Apart from the data ingredients obtained from read_data(), you must initialize model parameters, which are stored in a list called MLMoption. 
+These parameters fixes the behavior of the EM algorithm, variable selection, and model fitting.
+
 ```r
-# read necessary parameters for model in MLMopton
-MLMoption = GeMLR::init_MLMoption(alphaLasso = 0.8, vlasso = vlasso, numcmp = 1, stopratio = 1.0e-5,
-                           verbose = 1, minloop = 3, maxloop = 5, constrain = 'DIAS',
-                           diagshrink = 0.9, kmseed = 0, algorithm = 1, kappa = -1,
-                           AUC = 1, DISTR = 'binomial', NOEM = 0,Yalpha = 1.0)
+# Initialize model parameters
+MLMoption <- GeMLR::init_MLMoption(
+  alphaLasso = 0.8, 
+  vlasso = vlasso, 
+  numcmp = 1, 
+  stopratio = 1.0e-5,
+  verbose = 1, 
+  minloop = 3, 
+  maxloop = 5, 
+  constrain = "DIAS",
+  diagshrink = 0.9, 
+  kmseed = 0, 
+  algorithm = 1, 
+  kappa = -1,
+  AUC = 1, 
+  DISTR = "binomial", 
+  NOEM = 0, 
+  Yalpha = 1.0
+)
 ```
 
-In our package, we set all parameters in MLMoption. If you want to change it for your need, you should read the annotations and change the values carefully.
+All model settings are specified within `MLMoption`. You may modify these values based on your study requirements, but we recommend doing so carefully and with reference to the original documentation.
 
-- <mark style="background-color: #f0f0f0; color: black;">**MLMoption$lambdaLasso**</mark>: the value of lambda for every cluster in Lasso.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$stopratio**</mark>: default is 1.0e-5, means the threshold controling the number of EM iterations in em_MLM.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$kappa**</mark>: default is -1.0,means the weights on instances can be part of the optimization if the option is evoked. For the paper, we set negative value that disables the option of weighted instances.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption.verbose**</mark>： deault is 1,means T.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$minloop**</mark>:default is 3, and must be greater than 2.The minimum number of iterations in EM algorithm.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$maxloop**</mark>: The maximum number of iterations in EM algorithm.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$constrain**</mark>: default is 'DIAS', means different names of models in R package: **Mclust**. Possible strings: 'N' (no constrain), 'EI','VI','EEE','VVV','DIA','DIAE','DIAS','EEV','VEV'.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$diagshrink**</mark>: default is 0.9, larger value indicates more shrinkage towards diagonal, only used if the constraint is 'DIAS'.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$algorithm**</mark>: default is 1. 1 for Lasso, 0 for Logistic without variable selection
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$numcmp**</mark>: default is 2, means the number of clusters.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$AUC**</mark>: default is 1. If set AUC=1, use AUC to pick the best seed in estimateBestSD, otherwise, use accuracy.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$DISTR**</mark>: default is 'binomial'. 'binomial' for classification, and 'normal' for regression.
--  <mark style="background-color: #f0f0f0; color: black;">**MLMoption$NOEM**</mark>: default is 1, means whether to use EM algorithm. If equals 1, then only run initialization, NO EM update.
-
+Below is a brief explanation of key parameters:
+  
+* `MLMoption$lambdaLasso`: Lasso penalty $\lambda$ for each cluster.
+* `MLMoption$stopratio`: Convergence threshold controlling the number of iterations for the EM algorithm (default: `1.0e-5`).
+* `MLMoption$kappa`: Controls whether sample weights are used. Default is `-1`, which disables weighting.
+* `MLMoption$verbose`: Verbosity flag (default: `1` = T/show messages).
+* `MLMoption$minloop`: Minimum number of EM iterations (default: `3`, must be greater 2).
+* `MLMoption$maxloop`: Maximum number of EM iterations.
+* `MLMoption$constrain`: Covariance structure for GMMs (default: `'DIAS'`). Options include `'N'` (no constrain), `'EI'`, `'VI'`, `'EEE'`, `'VVV'`, `'DIA'`, `'DIAE'`, `'DIAS'`, `'EEV'`, `'VEV'`.
+* `MLMoption$diagshrink`: Shrinkage toward diagonal in constrained models (default: `0.9`, only used for `'DIAS'`).
+* `MLMoption$algorithm`: Model fitting method (1 = Lasso-regularized logistic regression; 0 = logistic without variable selection).
+* `MLMoption$numcmp`: Number of clusters (default: `2`).
+* `MLMoption$AUC`: Selection metric for best seed (1 = AUC, 0 = accuracy).
+* `MLMoption$DISTR`: Distribution (default: `'binomial'` for classification, otherwise, 'normal' for regression).
+* `MLMoption$NOEM`: Whether to use EM algorithm. If set to `1`, disables EM updates and only runs initialization.
 
 At this point, all the raw materials needed to build the model are ready.
 
 ***
 
+### Step 5. Select Optimal Model via Cross-Validation
 
+To determine the optimal number of clusters, you can use the built-in cross-validation function `runCV()`.
 
 ```r
-# use cross-validation to choose the seed with best performance
-result2 = runCV(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption)
-# k: the number of folds used in cross validation (user define).
-# ncmp: the optional number of clusters (user define).
-# nseeds: the number of random seeds used in kmeans (user define).
-# rangeSeed: the maximum of random seeds (user define).
-cv_mean = apply(result2$cvAUCfinal,2,mean)
-cvAUC = result2$cvAUCfinal
+# Perform cross-validation to select the optimal number of clusters
+result2 <- runCV(
+  k = 5,                   # Number of folds used in cross-validation (user defined)
+  ncmp = c(2, 3, 4),       # Number of clusters to evaluate (user defined)
+  nseeds = 20,             # Number of random seeds used in k-means (user defined)
+  rangeSeed = 30,          # Maximum range of seeds to draw from (user defined)
+  vargmm = vargmm, 
+  Y = Y, 
+  X = X, 
+  Indi = Indi, 
+  MLMoption = MLMoption
+)
+
+# Extract and summarize CV results
+cvAUC   <- result2$cvAUCfinal
+cv_mean <- apply(cvAUC, 2, mean)
 ```
-run_CV ( ) returns important result—— cvAUVfinal. In cvAUVfinal, each column means a different total number of clusters (such as 2/3/4), and each row means a case that one of the fold is the traning data. 
+
+**Details**:
+
+* `k`: Number of folds used in cross-validation.
+* `ncmp`: A vector of possible cluster counts to consider (e.g., `c(2, 3, 4)`). Users may define this based on prior knowledge or modeling goals.
+* `nseeds`: Number of k-means initializations per candidate model.
+* `rangeSeed`: The upper bound of the random seed range used to draw `nseeds`.
+
+
+`runCV()` returns a list that includes `cvAUCfinal`, a matrix of AUC values:
+  
+- Each **column** corresponds to a different number of clusters (`ncmp`).
+- Each **row** represents one fold of cross-validation.
+
 ```r
-# Given the case ncmp=c(2,3,4). User can define ncmp as they want.
+# Example output for ncmp = c(2, 3, 4)
 > result2$cvAUCfinal
-        cluster=2 cluster=3 cluster=4
-1 fold   0.5111    0.7778    0.8889
-2 fold   0.6667    0.8333    0.8889
-3 fold   0.6400    0.7600    0.7000
-4 fold   0.6667    0.6667    0.7556
-5 fold   0.5111    0.7333    0.4889
+         cluster=2 cluster=3 cluster=4
+1 fold      0.5111     0.7778     0.8889
+2 fold      0.6667     0.8333     0.8889
+3 fold      0.6400     0.7600     0.7000
+4 fold      0.6667     0.6667     0.7556
+5 fold      0.5111     0.7333     0.4889
 ```
-
 
 ***
 
-```r
-# find the final model for every cluster
-result3 = finalModel(cvAUC, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, Xs, X, Indi, MLMoption)
-```
+### Step 6. Fit the Final Model
 
-If you want to see the $\beta$ coefficients for each cluster or save the figure, you can use *plot_beta_heatmap* as follows:
+Once you have identified the preferred number of clusters (based on average AUC or interpretability), you can fit the final model:
+
+```r
+# Fit the final model using the best cluster setting
+result3 <- finalModel(
+  cvAUC = cvAUC, 
+  ncmp = c(2, 3, 4), 
+  nseeds = 20, 
+  rangeSeed = 30, 
+  vargmm = vargmm, 
+  Y = Y, 
+  Xs = Xs, 
+  X = X, 
+  Indi = Indi, 
+  MLMoption = MLMoption
+)
+```
+### Step 7. Visualize Cluster-Specific Coefficients
+
+You can inspect the model's coefficients for each cluster by visualizing the heatmap of $\beta$ coefficients using the `plot_beta_heatmap` function:
 
 ```r
 # show the picture in the sidebar
@@ -131,10 +212,14 @@ plot_beta_heatmap(result3$beta)
 # save the picture
 plot_beta_heatmap(result3$beta, output_file = "beta_heatmap.png")
 ```
+This function will generate a heatmap where:
 
-The you wil see a picture as follows:
+* Rows correspond to clusters
+* Columns correspond to selected biomarkers or features
+* Cell color indicates magnitude and sign of coefficients
+
+Then you will see a plot similar to this:
 ![](https://github.com/llin-lab/GeMLR/blob/main/example.png "Example Image")
-
 
 ## Citation
 ------------------------------------------------------------------------
