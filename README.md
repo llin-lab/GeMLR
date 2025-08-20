@@ -33,7 +33,7 @@ result = read_data(dat_road = "data\\VASTd0_Indi.txt", ycol=20, Indi_col=1, num_
 
 **Important:**
 
-- `dat_road` must be the path to a tab-delimited .txt file with column headers.
+- `dat_road` must be the full path to a text-based data (.txt, .csv, .tsv, .dat) file with column headers.
 - `ycol` is the column index for the binary outcome (e.g. infection).
 - `Indi_col` is the index (or indices) for indicator variables (e.g. vaccine group). Under the latest version, `Indi_col` can take a vector as input representing multiple indicator columns as input. 
 - `num_gmm` defines how many top-variable features (by variance) to use in the Gaussian Mixture Model (GMM)-based clustering. 
