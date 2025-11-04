@@ -1,88 +1,120 @@
-#' @title read dataset
-#' @description read the dataset and relevant parameters.
-#' @param dat_road the road of your .txt dataset file
-#' @param num_gmm the number of variables that are used in the gmm model, default=5
-#' @param alphaLasso the alpha number that are used in the elastic net regression
+#' Read dataset and prepare X/Xs/Y/Indi (silent & minimal return)
 #'
-#' @return a list of dataset and necessary variables
+#' @param dat_path Path to data file.
+#' @param ycol     Optional Y column (index or name). If NULL, use last column.
+#' @param Indi_col Optional indicator column (single index or single name).
+#' @param encoding Optional file encoding for text files.
+#' @return list(dim, numdata, rawdat, X, Xs, Y, Indi)
 #' @export
-read_data <- function(dat_road, sep_mark=' ', num_gmm=NULL,alphaLasso=0.8, ycol=NULL, Indi_col=1, gmm_var=NULL){
-  library(dplyr)
-  library(glmnet)
+read_data <- function(dat_path, ycol = NULL, Indi_col = NULL, encoding = NULL) {
+  stopifnot(length(dat_path) == 1, file.exists(dat_path))
+  ext <- tolower(tools::file_ext(dat_path))
 
-  rawdat = read.table(dat_road, sep = sep_mark, header = T)
-  if (!all(unlist(rawdat[,Indi_col]) %in% c(0, 1))) {
-    stop("The Indi column in your data must be 0 or 1(Indi)")
+  guess_sep <- function(path, enc = encoding) {
+    con <- if (is.null(enc)) file(path, "r") else file(path, "r", encoding = enc)
+    on.exit(close(con), add = TRUE)
+    ln <- readLines(con, n = 1)
+    if (length(ln) == 0) return("")
+    if (grepl(",", ln)) return(",")
+    if (grepl("\t", ln)) return("\t")
+    ""
   }
 
+  # 1) read
+  if (ext %in% c("csv")) {
+    rawdat <- if (is.null(encoding)) {
+      utils::read.csv(dat_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+    } else {
+      utils::read.csv(dat_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, fileEncoding = encoding)
+    }
+  } else if (ext %in% c("tsv", "tab")) {
+    rawdat <- if (is.null(encoding)) {
+      utils::read.delim(dat_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+    } else {
+      utils::read.delim(dat_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, fileEncoding = encoding)
+    }
+  } else if (ext %in% c("txt", "dat", "")) {
+    sep_guess <- guess_sep(dat_path, encoding)
+    rawdat <- if (is.null(encoding)) {
+      utils::read.table(dat_path, header = TRUE, sep = sep_guess, check.names = FALSE, stringsAsFactors = FALSE)
+    } else {
+      utils::read.table(dat_path, header = TRUE, sep = sep_guess, check.names = FALSE, stringsAsFactors = FALSE, fileEncoding = encoding)
+    }
+  } else if (ext %in% c("rds")) {
+    rawdat <- as.data.frame(readRDS(dat_path), check.names = FALSE, stringsAsFactors = FALSE)
+  } else if (ext %in% c("xlsx", "xls")) {
+    if (!requireNamespace("readxl", quietly = TRUE)) stop("readxl is required for Excel files.")
+    rawdat <- as.data.frame(readxl::read_excel(dat_path), check.names = FALSE, stringsAsFactors = FALSE)
+  } else if (ext %in% c("sav", "sas7bdat", "dta")) {
+    if (!requireNamespace("haven", quietly = TRUE)) stop("haven is required for SPSS/SAS/Stata files.")
+    if (ext == "sav")      rawdat <- as.data.frame(haven::read_sav(dat_path),  check.names = FALSE, stringsAsFactors = FALSE)
+    if (ext == "sas7bdat") rawdat <- as.data.frame(haven::read_sas(dat_path),  check.names = FALSE, stringsAsFactors = FALSE)
+    if (ext == "dta")      rawdat <- as.data.frame(haven::read_dta(dat_path),  check.names = FALSE, stringsAsFactors = FALSE)
+  } else {
+    rawdat <- if (is.null(encoding)) {
+      utils::read.table(dat_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+    } else {
+      utils::read.table(dat_path, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, fileEncoding = encoding)
+    }
+  }
+  if (!is.data.frame(rawdat) || ncol(rawdat) < 2L) stop("Invalid data frame.")
 
+  # 2) Y (binary {0,1})
   if (is.null(ycol)) {
     ycol <- ncol(rawdat)
-    cat("Using the last column of the dataframe as ycol.\n")
+  } else if (is.character(ycol)) {
+    stopifnot(length(ycol) == 1, ycol %in% colnames(rawdat))
+    ycol <- match(ycol, colnames(rawdat))
   } else {
-    cat("Using user-specified ycol value.\n")
+    stopifnot(is.numeric(ycol), length(ycol) == 1, ycol >= 1, ycol <= ncol(rawdat))
   }
+  Y <- rawdat[[ycol]]
+  if (!all(is.finite(Y)) || !all(Y %in% c(0, 1))) stop("Y must be strict {0,1}.")
+  Y <- as.numeric(Y)
 
-  if (!all(rawdat[[ycol]] %in% c(0, 1))) {
-    stop("The Y column in your data must be 0 or 1(Response)")
-  }
+  # 3) Indi (single column if provided; else auto-detect all strict 0/1 excluding Y)
+  n_all <- ncol(rawdat)
+  other_cols <- setdiff(seq_len(n_all), ycol)
+  is_bin <- function(v) is.numeric(v) && all(is.finite(v)) && all(v %in% c(0, 1))
 
-  numdata = nrow(rawdat)
-  dim = ncol(rawdat)
-  Y = rawdat[,ycol]
-  X = rawdat[,-c(ycol,Indi_col)]
-  Indi = rawdat[,Indi_col]
-  dim = ncol(X) # dim是X的维度
-  # 对X的每一列进行处理
-  Xs <- X
-  for (col in names(X)) {
-    if (!all(X[[col]] %in% c(0, 1)) || length(unique(X[[col]])) != 2) {
-      Xs[[col]] <- scale(X[[col]])[, 1]
-    }
-  }
-  X_var <- sapply(X, var)
-
-  vargmm = numeric(0)
-
-  if (is.null(num_gmm)) {
-    # default: use all
-    vargmm <- order(X_var, decreasing = TRUE)
-  } else {
-    # user-defined: Loop through each item in the user input vector
-    if (num_gmm==0){
-      if (is.null(gmm_var)){
-        "Please provide the column names or column indexes of the variables you want to use for the GMM model!"
-      } else {
-        for (item in gmm_var) {
-          if (item %in% colnames(rawdat)) {
-            vargmm <- c(vargmm, which(colnames(rawdat) == item))
-          } else if (is.numeric(as.numeric(item)) && item %in% 1:dim) {
-            vargmm <- c(vargmm, item)
-          } else {
-            warning(paste("Invalid input:", item))
-          }
-        }
-      }
-    } else if (is.numeric(num_gmm) && num_gmm > 0 && floor(num_gmm) == num_gmm){ # use variance, but with user-defined number
-      if (num_gmm<=dim){
-        vargmm <- order(X_var, decreasing = TRUE)[1:num_gmm]
-      } else {
-        vargmm <- order(X_var, decreasing = TRUE)[1:dim]
-        print("The number of columns you input is too large. By default, all variables are selected to participate in the GMM model.")
-      }
+  if (!is.null(Indi_col)) {
+    if (is.character(Indi_col)) {
+      stopifnot(length(Indi_col) == 1, Indi_col %in% colnames(rawdat))
+      indi_col <- match(Indi_col, colnames(rawdat))
     } else {
-      print('Invalid num_gmm!')
+      stopifnot(is.numeric(Indi_col), length(Indi_col) == 1, Indi_col >= 1, Indi_col <= n_all)
+      indi_col <- as.integer(Indi_col)
     }
+    if (indi_col == ycol) stop("Indi cannot be the same as Y.")
+    if (!is_bin(rawdat[[indi_col]])) stop("Specified Indi column is not strict {0,1}.")
+    Indi <- as.matrix(rawdat[, indi_col, drop = FALSE])
+    colnames(Indi) <- colnames(rawdat)[indi_col]
+  } else {
+    cand <- other_cols[vapply(rawdat[other_cols], is_bin, logical(1))]
+    Indi <- if (length(cand) == 0L) NULL else as.matrix(rawdat[, cand, drop = FALSE])
   }
 
+  # 4) X / Xs
+  X_cols <- setdiff(seq_len(n_all), c(ycol, if (is.null(Indi)) integer(0) else match(colnames(Indi), colnames(rawdat))))
+  if (length(X_cols) == 0L) stop("X is empty after removing Y and Indi.")
+  X <- as.data.frame(rawdat[, X_cols, drop = FALSE])
 
-  #X <- cbind(X, Indi)
-  Y <- as.vector(Y)
-  set.seed(1)
-  cv_fit <- suppressWarnings(cv.glmnet(data.matrix(cbind(X, Indi)), Y, alpha = 1, family = "binomial", nfolds = 5))
-  B <- coef(cv_fit, s = "lambda.min")
-  vlasso <- cv_fit$lambda.min
+  is_binary_vec <- function(v) is.numeric(v) && all(is.finite(v)) && all(sort(unique(v)) %in% c(0, 1))
+  Xs <- X
+  for (nm in colnames(X)) {
+    v <- X[[nm]]
+    if (!is_binary_vec(v)) Xs[[nm]] <- scale(v)[, 1]
+  }
 
-  return(list(dim=dim,numdata=numdata,rawdat=rawdat,vargmm=vargmm,vlasso=vlasso,X=X,Xs=Xs,Y=Y,Indi=Indi))
+  dim <- ncol(X)
+  numdata <- nrow(rawdat)
 
+  return(list(dim = dim,
+              numdata = numdata,
+              rawdat = rawdat,
+              X = X,
+              Xs = Xs,
+              Y = Y,
+              Indi = Indi))
 }
+
