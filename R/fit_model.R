@@ -199,7 +199,4 @@ predict_class <- function(fit, newx, Indi = NULL, threshold = 0.5) {
 }
 
 
-  cls <- MLMclassify(fit$a2, fit$mu2, fit$sigma2, fit$beta, X_gmm, Xlogit)
-  as.integer(as.numeric(cls$pyi) >= threshold)
-}
 
