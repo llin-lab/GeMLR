@@ -137,6 +137,8 @@ fit_model <- function(x, y, Indi = NULL,
     b_coef <- cv_lr$glmnet.fit$beta[, lam_idx, drop = FALSE]
     beta <- rbind("(Intercept)" = b_intercept, as.matrix(b_coef))
     colnames(beta) <- "Cluster 1"
+    beta <- cbind(beta, beta[, 1, drop = FALSE])
+    colnames(beta)[2] <- "LR"
     a2 <- 1
     mu2 <- matrix(0, nrow = dimgmm, ncol = 1)
     sigma2 <- array(diag(dimgmm), dim = c(dimgmm, dimgmm, 1))
@@ -159,7 +161,28 @@ fit_model <- function(x, y, Indi = NULL,
   cls <- MLMclassify(a2, mu2, sigma2, beta, X_gmm, Xlogit)
   pyi <- as.numeric(cls$pyi); pij <- cls$pij
   clusterid <- max.col(pij, ties.method = "first")
-
+  
+  if (requireNamespace("glmnet", quietly = TRUE)) {
+    tryCatch({
+      set.seed(1)
+      suppressWarnings({
+        cv_lr <- glmnet::cv.glmnet(
+          x = data.matrix(Xlogit), 
+          y = Y, 
+          alpha = 1, 
+          family = "binomial", 
+          nfolds = 5
+        )
+      })
+      B_lr <- coef(cv_lr, s = "lambda.min")
+      if (nrow(beta) == nrow(B_lr)) {
+        beta <- cbind(beta, as.matrix(B_lr))
+        colnames(beta)[ncol(beta)] <- "LR"
+      }
+    }, error = function(e) {
+      warning("Failed to add LR baseline: ", e$message)
+    })
+  }
   # -- safe metrics
   eps <- 1e-12
   p_safe <- pyi
@@ -197,6 +220,7 @@ predict_class <- function(fit, newx, Indi = NULL, threshold = 0.5) {
   cls <- MLMclassify(fit$a2, fit$mu2, fit$sigma2, fit$beta, X_gmm, Xlogit)
   as.integer(as.numeric(cls$pyi) >= threshold)
 }
+
 
 
 
