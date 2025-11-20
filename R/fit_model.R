@@ -78,7 +78,7 @@ fit_model <- function(x, y, Indi = NULL,
     if (!requireNamespace("glmnet", quietly = TRUE))
       stop("Package 'glmnet' is required.")
     suppressWarnings({
-      cv_fit <- glmnet::cv.glmnet(as.matrix(cbind(Xs, Indi)), Y, alpha = 1, family = "binomial", nfolds = 5)
+      cv_fit <- glmnet::cv.glmnet(data.matrix(Xlogit), Y, alpha = 1, family = "binomial", nfolds = 5)
     })
     vlasso <- cv_fit$lambda.min
   }
@@ -197,6 +197,7 @@ predict_class <- function(fit, newx, Indi = NULL, threshold = 0.5) {
   cls <- MLMclassify(fit$a2, fit$mu2, fit$sigma2, fit$beta, X_gmm, Xlogit)
   as.integer(as.numeric(cls$pyi) >= threshold)
 }
+
 
 
 
