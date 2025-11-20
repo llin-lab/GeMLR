@@ -152,7 +152,7 @@ fit <- fit_model(
   K = 3,               # Specify number of clusters
   num_gmm = 5,         # Automatically selects top 5 variance features (step 4.1)
   # OR use: vargmm = c(2, 5, 8, 12, 15),  # Manually specify features
-  vlasso = NULL,       # Automatically estimates lambda (step 4.2); or specify your own
+  vlasso = vlasso,       # Automatically estimates lambda (step 4.2); or specify your own
   nseeds = 10,         # Number of random initializations
   alphaLasso = 0.8,
   verbose = 0          # Set to 1 to see progress
