@@ -2,28 +2,22 @@
 % Please edit documentation in R/read_data.R
 \name{read_data}
 \alias{read_data}
-\title{read dataset}
+\title{Read dataset and prepare X/Xs/Y/Indi (silent & minimal return)}
 \usage{
-read_data(
-  dat_road,
-  sep_mark = " ",
-  num_gmm = NULL,
-  alphaLasso = 0.8,
-  ycol = NULL,
-  Indi_col = 1,
-  gmm_var = NULL
-)
+read_data(dat_path, ycol = NULL, Indi_col = NULL, encoding = NULL)
 }
 \arguments{
-\item{dat_road}{the road of your .txt dataset file}
+\item{dat_path}{Path to data file.}
 
-\item{num_gmm}{the number of variables that are used in the gmm model, default=5}
+\item{ycol}{Optional Y column (index or name). If NULL, use last column.}
 
-\item{alphaLasso}{the alpha number that are used in the elastic net regression}
+\item{Indi_col}{Optional indicator column (single index or single name).}
+
+\item{encoding}{Optional file encoding for text files.}
 }
 \value{
-a list of dataset and necessary variables
+list(dim, numdata, rawdat, X, Xs, Y, Indi)
 }
 \description{
-read the dataset and relevant parameters.
+Read dataset and prepare X/Xs/Y/Indi (silent & minimal return)
 }
