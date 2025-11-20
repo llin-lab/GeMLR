@@ -74,33 +74,7 @@ Indi    <- result$Indi     # Indicator variable(s) (default: first column). For 
 ```
 
 
-**Alternative Quick Start:** If you already know the optimal number of clusters K (from prior analysis or domain knowledge), you can skip Steps 4-6 and directly use the `fit_model()` function for quick fitting:
-```r
-# Quick model fitting without cross-validation
-# fit_model() automatically handles steps 4.1, 4.2, and 4.3
-fit <- fit_model(
-  x = Xs,              # Standardized features from read_data()
-  y = Y,
-  Indi = Indi,
-  K = 3,               # Specify number of clusters
-  num_gmm = 5,         # Automatically selects top 5 variance features (step 4.1)
-  # OR use: vargmm = c(2, 5, 8, 12, 15),  # Manually specify features
-  vlasso = NULL,       # Automatically estimates lambda (step 4.2); or specify your own
-  nseeds = 10,         # Number of random initializations
-  alphaLasso = 0.8,
-  verbose = 0          # Set to 1 to see progress
-)
 
-# View results
-print(fit$metrics)     # Accuracy, AUC, logloss
-print(fit$beta)        # Cluster-specific coefficients
-
-# Visualize
-plot_beta_heatmap(fit$beta)
-
-```
-
-Otherwise, continue with **Step 4** to use cross-validation to determine the optimal number of clusters.
 
 ### Step 4. Prepare Model Parameters
 
@@ -167,7 +141,33 @@ All model settings are specified within `MLMoption`. You may modify these values
 
 At this point, all the raw materials needed to build the model are ready.
 
+**Alternative Quick Start:** If you already know the optimal number of clusters K (from prior analysis or domain knowledge), you can skip Steps 5-6 and directly use the `fit_model()` function for quick fitting:
+```r
+# Quick model fitting without cross-validation
+# fit_model() automatically handles steps 4.1, 4.2, and 4.3
+fit <- fit_model(
+  x = Xs,              # Standardized features from read_data()
+  y = Y,
+  Indi = Indi,
+  K = 3,               # Specify number of clusters
+  num_gmm = 5,         # Automatically selects top 5 variance features (step 4.1)
+  # OR use: vargmm = c(2, 5, 8, 12, 15),  # Manually specify features
+  vlasso = NULL,       # Automatically estimates lambda (step 4.2); or specify your own
+  nseeds = 10,         # Number of random initializations
+  alphaLasso = 0.8,
+  verbose = 0          # Set to 1 to see progress
+)
 
+# View results
+print(fit$metrics)     # Accuracy, AUC, logloss
+print(fit$beta)        # Cluster-specific coefficients
+
+# Visualize
+plot_beta_heatmap(fit$beta)
+
+```
+
+Otherwise, continue with **Step 5** to use cross-validation to determine the optimal number of clusters.
 
 
 ***
