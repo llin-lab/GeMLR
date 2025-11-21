@@ -5,11 +5,10 @@
 \title{Quick GeMLR Fit Without Cross-Validation}
 \usage{
 fit_model(
-  x,
-  y,
+  X,
+  Y,
   Indi = NULL,
   K = 2,
-  num_gmm = 5,
   vargmm = NULL,
   nseeds = 3,
   rangeSeed = 500,
@@ -19,28 +18,25 @@ fit_model(
 )
 }
 \arguments{
-\item{x}{Numeric matrix/data.frame of predictors (n x p), ALREADY standardized (Xs from read_data()).}
-
-\item{y}{Binary response vector (0/1), length n.}
-
 \item{Indi}{Optional indicator (dummy) matrix/data.frame (n x q), appended to logistic design.}
 
 \item{K}{Number of clusters (default 2).}
 
-\item{num_gmm}{If NULL, use all columns for GMM; if 0, must provide vargmm;
-if positive integer, pick top-variance num_gmm columns (default 5).}
-
-\item{vargmm}{Column names or indices to use for GMM (takes precedence over num_gmm).}
+\item{vargmm}{Column names or indices to use for GMM. Use compute_gemlr_params() to obtain.}
 
 \item{nseeds}{Number of kmeans seeds to try (default 3).}
 
 \item{rangeSeed}{Upper bound for random seed sampling (default 500).}
 
-\item{vlasso}{Optional glmnet lambda; if NULL, estimated by cv.glmnet.}
+\item{vlasso}{Lambda for Lasso penalty. Use compute_gemlr_params() to obtain.}
 
 \item{alphaLasso}{Elastic-net alpha for glmnet (default 0.5).}
 
 \item{verbose}{Verbosity flag passed to GeMLR internals (0 = silent).}
+
+\item{x}{Numeric matrix/data.frame of predictors (n x p), ALREADY standardized (Xs from read_data()).}
+
+\item{y}{Binary response vector (0/1), length n.}
 }
 \value{
 An object of class "GeMLR_fit".
