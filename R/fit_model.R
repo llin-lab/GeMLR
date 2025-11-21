@@ -1,92 +1,71 @@
 #' Quick GeMLR Fit Without Cross-Validation
 #'
-#' @param x     Numeric matrix/data.frame of predictors (n x p), ALREADY standardized (Xs from read_data()).
-#' @param y     Binary response vector (0/1), length n.
-#' @param Indi  Optional indicator (dummy) matrix/data.frame (n x q), appended to logistic design.
-#' @param K     Number of clusters (default 2).
-#' @param num_gmm If NULL, use all columns for GMM; if 0, must provide vargmm;
-#'                if positive integer, pick top-variance num_gmm columns (default 5).
-#' @param vargmm Column names or indices to use for GMM (takes precedence over num_gmm).
+#' @param x Numeric matrix/data.frame of predictors (n x p), ALREADY standardized (Xs from read_data()).
+#' @param y Binary response vector (0/1), length n.
+#' @param Indi Optional indicator (dummy) matrix/data.frame (n x q), appended to logistic design.
+#' @param K Number of clusters (default 2).
+#' @param vargmm Column names or indices to use for GMM. Use compute_gemlr_params() to obtain.
+#' @param vlasso Lambda for Lasso penalty. Use compute_gemlr_params() to obtain.
 #' @param nseeds Number of kmeans seeds to try (default 3).
 #' @param rangeSeed Upper bound for random seed sampling (default 500).
-#' @param vlasso Optional glmnet lambda; if NULL, estimated by cv.glmnet.
 #' @param alphaLasso Elastic-net alpha for glmnet (default 0.5).
 #' @param verbose Verbosity flag passed to GeMLR internals (0 = silent).
 #'
 #' @return An object of class "GeMLR_fit".
 #' @export
-fit_model <- function(x, y, Indi = NULL,
+fit_model <- function(X, Y, Indi = NULL,
                       K = 2,
-                      num_gmm = 5,
                       vargmm = NULL,
                       nseeds = 3, rangeSeed = 500,
                       vlasso = NULL,
                       alphaLasso = 0.5,
                       verbose = 0) {
-
-  # -- inputs (assume x is already standardized: Xs)
-  Xs <- as.matrix(x)
-  Y  <- as.numeric(y)
+  
+  # -- inputs
+  Xs <- as.matrix(X)
+  Y  <- as.numeric(Y)
   stopifnot(all(Y %in% c(0, 1)))
   if (!is.null(Indi)) Indi <- as.matrix(Indi)
-
+  
   # -- logistic design matrix
   Xlogit <- if (is.null(Indi)) Xs else cbind(Xs, Indi)
   storage.mode(Xlogit) <- "double"
   colnames(Xlogit) <- make.names(colnames(Xlogit), unique = TRUE)
-
-  # ---------- GMM feature selection on Xs ----------
-  p <- ncol(Xs)
-  if (!is.null(vargmm) && length(vargmm) > 0L) {
-    # use vargmm (names or indices)
-    if (is.character(vargmm)) {
-      if (is.null(colnames(Xs))) stop("vargmm uses names but Xs has no column names.")
-      if (!all(vargmm %in% colnames(Xs))) stop("Some vargmm names not found in Xs.")
-      idx_gmm <- match(vargmm, colnames(Xs))
-    } else {
-      idx_gmm <- as.integer(vargmm)
-    }
-  } else {
-    # derive by num_gmm
-    if (is.null(num_gmm)) {
-      idx_gmm <- seq_len(p)  # use all
-    } else if (identical(num_gmm, 0L) || identical(num_gmm, 0)) {
-      stop("num_gmm = 0 requires providing vargmm (names or indices).")
-    } else if (is.numeric(num_gmm) && num_gmm > 0 && floor(num_gmm) == num_gmm) {
-      X_var <- apply(Xs, 2, var)
-      ord   <- order(X_var, decreasing = TRUE)
-      k     <- min(num_gmm, p)
-      idx_gmm <- ord[seq_len(k)]
-    } else {
-      stop("num_gmm must be NULL, 0, or a positive integer.")
-    }
+  
+  # -- Check required parameters
+  if (is.null(vargmm)) {
+    stop("vargmm is required. Use compute_gemlr_params() to obtain it.")
   }
+  if (is.null(vlasso)) {
+    stop("vlasso is required. Use compute_gemlr_params() to obtain it.")
+  }
+  
+  # -- resolve vargmm to indices
+  p <- ncol(Xs)
+  if (is.character(vargmm)) {
+    if (is.null(colnames(Xs))) stop("vargmm uses names but Xs has no column names.")
+    if (!all(vargmm %in% colnames(Xs))) stop("Some vargmm names not found in Xs.")
+    idx_gmm <- match(vargmm, colnames(Xs))
+  } else {
+    idx_gmm <- as.integer(vargmm)
+  }
+  
   if (length(idx_gmm) == 0L || !all(idx_gmm %in% seq_len(p))) {
     stop("Resolved vargmm is empty or out of range.")
   }
   idx_gmm <- sort(unique(idx_gmm))
   X_gmm   <- Xs[, idx_gmm, drop = FALSE]
   dimgmm  <- ncol(X_gmm)
-
+  
   # -- sanity
   if (any(!is.finite(X_gmm)) || any(!is.finite(Xlogit)) || any(!is.finite(Y))) {
     stop("X/Indi/Y contains NA/Inf.")
   }
-
-  # -- lambda for glmnet (if not provided)
-  if (is.null(vlasso)) {
-    if (!requireNamespace("glmnet", quietly = TRUE))
-      stop("Package 'glmnet' is required.")
-    suppressWarnings({
-      cv_fit <- glmnet::cv.glmnet(data.matrix(Xlogit), Y, alpha = 1, family = "binomial", nfolds = 5)
-    })
-    vlasso <- cv_fit$lambda.min
-  }
-
+  
   # -- GeMLR options
   MLMoption <- init_MLMoption(
     alphaLasso = alphaLasso,
-    vlasso     = 1,      # placeholder (we set lambdaLasso below)
+    vlasso     = 1,
     numcmp     = K,
     verbose    = verbose,
     DISTR      = "binomial",
@@ -94,7 +73,8 @@ fit_model <- function(x, y, Indi = NULL,
     NOEM       = 0
   )
   MLMoption$lambdaLasso <- rep(vlasso, K)
-
+  
+  set.seed(9)
   # -- seeds for initialization
   seedlist <- sample.int(max(10, rangeSeed), nseeds, replace = FALSE)
 

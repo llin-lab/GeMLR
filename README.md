@@ -74,31 +74,29 @@ Indi    <- result$Indi     # Indicator variable(s) (default: first column). For 
 ```
 
 
-
-
 ### Step 4. Prepare Model Parameters
 
-To run the cross-validation workflow, we need to:
-1. Select features for GMM clustering
-2. Estimate the Lasso penalty parameter
-3. Initialize the model options
 ```r
-# 4.1 Select GMM features based on variance
-num_gmm <- 5  # Use top 5 highest-variance features
-X_var <- apply(Xs, 2, var)
-vargmm <- order(X_var, decreasing = TRUE)[1:num_gmm]
+# Compute vargmm and vlasso
+params <- compute_gemlr_params(
+  X = X,
+  Y = Y,
+  Indi = Indi,   
+  num_gmm = 5
+)
 
-# Alternatively, manually specify GMM features:
-# vargmm <- c(2, 5, 8, 12, 15)  # By column indices
-# vargmm <- c("V2", "V5", "V8", "V12", "V15")  # By column names
+# Extract parameters
+vargmm <- params$vargmm
+vlasso <- params$vlasso
+```
+- `num_gmm` defines how many top-variable features (by variance) to use in the Gaussian Mixture Model (GMM)-based clustering. 
+  
+  - If you set `num_gmm` to a positive integer (recommended is 5), the function will select the top `num_gmm` variables with the highest variance for GMM input.
+  - If you set `num_gmm` = 0, you must provide a separate `gmm_var` argument to specify which variables to use. `gmm_var` can be a vector of column names or column indices.
+  - If you omit `num_gmm` entirely, all available variables (excluding Indi and Y) will be used in GMM by default.
 
-# 4.2 Estimate lambda for Lasso penalty
-library(glmnet)
-cv_fit <- cv.glmnet(as.matrix(cbind(Xs, Indi)), Y, 
-                    alpha = 1, family = "binomial", nfolds = 5)
-vlasso <- cv_fit$lambda.min
-
-# 4.3 Initialize model parameters
+```r
+# Initialize model parameters
 MLMoption <- init_MLMoption(
   alphaLasso = 0.8, 
   vlasso = vlasso,       
@@ -123,8 +121,8 @@ All model settings are specified within `MLMoption`. You may modify these values
 
 **Key parameters explained:**
 
-* `vargmm`: Column indices of features used for GMM clustering (calculated in 4.1)
-* `vlasso`: Lasso penalty strength λ (calculated in 4.2)
+* `vargmm`: Column indices of features used for GMM clustering 
+* `vlasso`: Lasso penalty strength λ 
 * `alphaLasso`: Elastic net mixing parameter (1=Lasso, 0=Ridge, 0.5=equal mix)
 * `stopratio`: Convergence threshold controlling the number of EM iterations (default: `1.0e-5`)
 * `kappa`: Controls whether sample weights are used. Default is `-1`, which disables weighting
@@ -144,14 +142,13 @@ At this point, all the raw materials needed to build the model are ready.
 **Alternative Quick Start:** If you already know the optimal number of clusters K (from prior analysis or domain knowledge), you can skip Steps 5-6 and directly use the `fit_model()` function for quick fitting:
 ```r
 # Quick model fitting without cross-validation
-# fit_model() automatically handles steps 4.1, 4.2, and 4.3
+
 fit <- fit_model(
-  x = Xs,              # Standardized features from read_data()
-  y = Y,
+  X = Xs,              # Standardized features from read_data()
+  Y = Y,
   Indi = Indi,
   K = 3,               # Specify number of clusters
-  num_gmm = 5,         # Automatically selects top 5 variance features (step 4.1)
-  # OR use: vargmm = c(2, 5, 8, 12, 15),  # Manually specify features
+  vargmm = vargmm,
   vlasso = vlasso,       # Automatically estimates lambda (step 4.2); or specify your own
   nseeds = 10,         # Number of random initializations
   alphaLasso = 0.8,
