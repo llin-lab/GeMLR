@@ -1,4 +1,4 @@
-#' Read dataset and prepare X/Xs/Y/Indi (with automatic column name fixing)
+#' Read dataset and prepare X/Xs/Y/Indi (with auto header detection)
 #'
 #' @param dat_path Path to data file.
 #' @param ycol     Optional Y column (index or name). If NULL, use last column.
@@ -17,46 +17,102 @@ read_data <- function(dat_path, ycol = NULL, Indi_col = NULL, encoding = NULL) {
     if (length(ln) == 0) return("")
     if (grepl(",", ln)) return(",")
     if (grepl("\t", ln)) return("\t")
-    ""
+    " "  
   }
   
-  # 1) read
-  if (ext %in% c("csv")) {
-    rawdat <- if (is.null(encoding)) {
-      utils::read.csv(dat_path, header = TRUE, stringsAsFactors = FALSE)
+  # Auto-detect if file has header
+  detect_header <- function(path, sep_val, enc = encoding) {
+    con <- if (is.null(enc)) file(path, "r") else file(path, "r", encoding = enc)
+    on.exit(close(con), add = TRUE)
+    
+    # Read first two lines
+    lines <- readLines(con, n = 2)
+    if (length(lines) < 2) return(TRUE)  
+    
+    # Split by separator
+    line1 <- strsplit(lines[1], sep_val)[[1]]
+    line2 <- strsplit(lines[2], sep_val)[[1]]
+    
+    # Remove empty strings and whitespace
+    line1 <- trimws(line1[nzchar(trimws(line1))])
+    line2 <- trimws(line2[nzchar(trimws(line2))])
+    
+    if (length(line1) == 0 || length(line2) == 0) return(TRUE)
+    
+    # Count numeric values in each line
+    numeric_count_1 <- sum(suppressWarnings(!is.na(as.numeric(line1))))
+    numeric_count_2 <- sum(suppressWarnings(!is.na(as.numeric(line2))))
+    
+    # If first line has significantly fewer numbers than second line, likely header
+    # If both lines are mostly numeric, likely no header
+    ratio_1 <- numeric_count_1 / length(line1)
+    ratio_2 <- numeric_count_2 / length(line2)
+    
+    # Logic:
+    # - If line1 < 50% numeric and line2 > 80% numeric → has header
+    # - If line1 > 80% numeric and line2 > 80% numeric → no header
+    if (ratio_1 < 0.5 && ratio_2 > 0.8) {
+      return(TRUE)   # Has header
+    } else if (ratio_1 > 0.8 && ratio_2 > 0.8) {
+      return(FALSE)  # No header
     } else {
-      utils::read.csv(dat_path, header = TRUE, stringsAsFactors = FALSE, fileEncoding = encoding)
+      return(TRUE)   # Default: assume header
+    }
+  }
+  
+  # 1) read with auto-detected header
+  has_header <- TRUE  # Default
+  sep_val <- " "      # Default
+  
+  if (ext %in% c("csv")) {
+    sep_val <- ","
+    has_header <- detect_header(dat_path, sep_val, encoding)
+    rawdat <- if (is.null(encoding)) {
+      utils::read.csv(dat_path, header = has_header, stringsAsFactors = FALSE)
+    } else {
+      utils::read.csv(dat_path, header = has_header, stringsAsFactors = FALSE, fileEncoding = encoding)
     }
   } else if (ext %in% c("tsv", "tab")) {
+    sep_val <- "\t"
+    has_header <- detect_header(dat_path, sep_val, encoding)
     rawdat <- if (is.null(encoding)) {
-      utils::read.delim(dat_path, header = TRUE, stringsAsFactors = FALSE)
+      utils::read.delim(dat_path, header = has_header, stringsAsFactors = FALSE)
     } else {
-      utils::read.delim(dat_path, header = TRUE, stringsAsFactors = FALSE, fileEncoding = encoding)
+      utils::read.delim(dat_path, header = has_header, stringsAsFactors = FALSE, fileEncoding = encoding)
     }
   } else if (ext %in% c("txt", "dat", "")) {
-    sep_guess <- guess_sep(dat_path, encoding)
+    sep_val <- guess_sep(dat_path, encoding)
+    if (sep_val == "") sep_val <- " "
+    has_header <- detect_header(dat_path, sep_val, encoding)
     rawdat <- if (is.null(encoding)) {
-      utils::read.table(dat_path, header = TRUE, sep = sep_guess, stringsAsFactors = FALSE)
+      utils::read.table(dat_path, header = has_header, sep = sep_val, stringsAsFactors = FALSE)
     } else {
-      utils::read.table(dat_path, header = TRUE, sep = sep_guess, stringsAsFactors = FALSE, fileEncoding = encoding)
+      utils::read.table(dat_path, header = has_header, sep = sep_val, stringsAsFactors = FALSE, fileEncoding = encoding)
     }
   } else if (ext %in% c("rds")) {
     rawdat <- as.data.frame(readRDS(dat_path), stringsAsFactors = FALSE)
+    has_header <- TRUE
   } else if (ext %in% c("xlsx", "xls")) {
     if (!requireNamespace("readxl", quietly = TRUE)) stop("readxl is required for Excel files.")
     rawdat <- as.data.frame(readxl::read_excel(dat_path), stringsAsFactors = FALSE)
+    has_header <- TRUE
   } else if (ext %in% c("sav", "sas7bdat", "dta")) {
     if (!requireNamespace("haven", quietly = TRUE)) stop("haven is required for SPSS/SAS/Stata files.")
     if (ext == "sav")      rawdat <- as.data.frame(haven::read_sav(dat_path), stringsAsFactors = FALSE)
     if (ext == "sas7bdat") rawdat <- as.data.frame(haven::read_sas(dat_path), stringsAsFactors = FALSE)
     if (ext == "dta")      rawdat <- as.data.frame(haven::read_dta(dat_path), stringsAsFactors = FALSE)
+    has_header <- TRUE
   } else {
+    sep_val <- guess_sep(dat_path, encoding)
+    if (sep_val == "") sep_val <- " "
+    has_header <- detect_header(dat_path, sep_val, encoding)
     rawdat <- if (is.null(encoding)) {
-      utils::read.table(dat_path, header = TRUE, stringsAsFactors = FALSE)
+      utils::read.table(dat_path, header = has_header, sep = sep_val, stringsAsFactors = FALSE)
     } else {
-      utils::read.table(dat_path, header = TRUE, stringsAsFactors = FALSE, fileEncoding = encoding)
+      utils::read.table(dat_path, header = has_header, sep = sep_val, stringsAsFactors = FALSE, fileEncoding = encoding)
     }
   }
+  
   if (!is.data.frame(rawdat) || ncol(rawdat) < 2L) stop("Invalid data frame.")
   
   # 2) Y (binary {0,1})

@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_data.R
 \name{read_data}
 \alias{read_data}
-\title{Read dataset and prepare X/Xs/Y/Indi (silent & minimal return)}
+\title{Read dataset and prepare X/Xs/Y/Indi (with automatic column name fixing)}
 \usage{
 read_data(dat_path, ycol = NULL, Indi_col = NULL, encoding = NULL)
 }
@@ -19,5 +19,5 @@ read_data(dat_path, ycol = NULL, Indi_col = NULL, encoding = NULL)
 list(dim, numdata, rawdat, X, Xs, Y, Indi)
 }
 \description{
-Read dataset and prepare X/Xs/Y/Indi (silent & minimal return)
+Read dataset and prepare X/Xs/Y/Indi (with automatic column name fixing)
 }
