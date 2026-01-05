@@ -7,22 +7,39 @@
 #' @param nseeds the number of random seeds
 #' @param rangeSeed the largest number among random seeds
 #' @param vargmm the index of variables that are used in gmm
+#' @param vlasso Lambda for Lasso penalty
 #' @param Y the response variable
 #' @param X all independent variables
 #' @param Indi dummy variable
-#' @param MLMoption all necessary variables
+#' @param alphaLasso Elastic net parameter (default 0.8)
+#' @param stopratio Convergence threshold (default 1.0e-5)
+#' @param verbose Verbosity flag (default 1)
+#' @param constrain Covariance constraint (default "DIAS")
+#' @param diagshrink Diagonal shrinkage (default 0.9)
+#' @param kappa Instance weighting (default -1)
+#' @param AUC Use AUC for selection (default 1)
+#' @param DISTR Distribution family (default "binomial")
 #'
 #' @return all AUC informations and the final classification result
 #' @export
 #'
-runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Indi, MLMoption) {
+runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, 
+                  vargmm, vlasso, Y, X, Indi, 
+                  alphaLasso = 0.8,
+                  stopratio = 1.0e-5,
+                  verbose = 1,
+                  constrain = "DIAS",
+                  diagshrink = 0.9,
+                  kappa = -1,
+                  AUC = 1,
+                  DISTR = "binomial") {
   library(caret)
   library(pROC)
 
   lcmp <- length(ncmp)
   dimgmm <- length(vargmm)
   labels <- vector("list", lcmp * k)
-    guess <- vector("list", lcmp * k)
+  guess <- vector("list", lcmp * k)
 
   cvAUCfinal <- matrix(0, nrow = k, ncol = lcmp)
   rownames(cvAUCfinal) <- paste(1:k, "fold", sep = " ")
@@ -56,10 +73,27 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Ind
     }
 
     for (jj in 1:lcmp) {
-      MLMoption$numcmp <- ncmp[jj]
-      MLMoption$lambdaLasso <- rep(MLMoption$lambdaLasso[1], ncmp[jj])
+      # Create MLMoption internally
+      MLMoption <- init_MLMoption(
+        alphaLasso = alphaLasso,
+        vlasso = vlasso,
+        numcmp = ncmp[jj],
+        stopratio = stopratio,
+        verbose = verbose,
+        minloop = 3,
+        maxloop = 50,
+        constrain = constrain,
+        diagshrink = diagshrink,
+        kmseed = 0,
+        algorithm = 1,
+        kappa = kappa,
+        AUC = AUC,
+        DISTR = DISTR,
+        NOEM = 0,
+        Yalpha = 1.0
+      )
+      MLMoption$lambdaLasso <- rep(vlasso, ncmp[jj])
 
-      # cat('the runCV iterations is:',jj,'\n')
       est <- estimateBestSD(Xtraining[, vargmm], Xtrain_indi, Ytraining, MLMoption, rseeds)
       c <- est[[1]]
       beta <- est[[2]]
@@ -77,9 +111,8 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, vargmm, Y, X, Ind
       labels[[jj + (ifold - 1) * lcmp]] <- Ytt
       guess[[jj + (ifold - 1) * lcmp]] <- pyi
 
-      roc_obj <- roc(Ytt, pyi,levels = c(0,1))
+      roc_obj <- roc(Ytt, pyi, levels = c(0,1))
       cvAUCfinal[ifold, jj] <- roc_obj$auc
-
     }
   }
 

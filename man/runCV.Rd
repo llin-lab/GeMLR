@@ -10,10 +10,18 @@ runCV(
   nseeds = 20,
   rangeSeed = 30,
   vargmm,
+  vlasso,
   Y,
   X,
   Indi,
-  MLMoption
+  alphaLasso = 0.8,
+  stopratio = 1e-05,
+  verbose = 1,
+  constrain = "DIAS",
+  diagshrink = 0.9,
+  kappa = -1,
+  AUC = 1,
+  DISTR = "binomial"
 )
 }
 \arguments{
@@ -27,13 +35,29 @@ runCV(
 
 \item{vargmm}{the index of variables that are used in gmm}
 
+\item{vlasso}{Lambda for Lasso penalty}
+
 \item{Y}{the response variable}
 
 \item{X}{all independent variables}
 
 \item{Indi}{dummy variable}
 
-\item{MLMoption}{all necessary variables}
+\item{alphaLasso}{Elastic net parameter (default 0.8)}
+
+\item{stopratio}{Convergence threshold (default 1.0e-5)}
+
+\item{verbose}{Verbosity flag (default 1)}
+
+\item{constrain}{Covariance constraint (default "DIAS")}
+
+\item{diagshrink}{Diagonal shrinkage (default 0.9)}
+
+\item{kappa}{Instance weighting (default -1)}
+
+\item{AUC}{Use AUC for selection (default 1)}
+
+\item{DISTR}{Distribution family (default "binomial")}
 }
 \value{
 all AUC informations and the final classification result

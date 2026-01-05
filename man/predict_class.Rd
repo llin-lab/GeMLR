@@ -2,10 +2,22 @@
 % Please edit documentation in R/fit_model.R
 \name{predict_class}
 \alias{predict_class}
-\title{Predict Class Labels (expects newx standardized same as training Xs)}
+\title{Predict Class Labels}
 \usage{
 predict_class(fit, newx, Indi = NULL, threshold = 0.5)
 }
+\arguments{
+\item{fit}{A GeMLR_fit object from fit_model()}
+
+\item{newx}{Standardized predictor matrix (same standardization as training Xs)}
+
+\item{Indi}{Optional indicator variables for new data}
+
+\item{threshold}{Classification threshold (default 0.5)}
+}
+\value{
+Binary predictions (0/1)
+}
 \description{
-Predict Class Labels (expects newx standardized same as training Xs)
+Predict Class Labels
 }

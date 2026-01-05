@@ -6,40 +6,46 @@
 \usage{
 fit_model(
   X,
+  Xs,
   Y,
   Indi = NULL,
   K = 2,
   vargmm = NULL,
+  VS = NA,
+  varreg = NULL,
+  vlasso = NULL,
   nseeds = 3,
   rangeSeed = 500,
-  vlasso = NULL,
   alphaLasso = 0.5,
   verbose = 0
 )
 }
 \arguments{
-\item{Indi}{Optional indicator (dummy) matrix/data.frame (n x q), appended to logistic design.}
+\item{X}{Raw (unstandardized) predictor matrix (n x p).}
+
+\item{Xs}{Standardized predictor matrix (n x p).}
+
+\item{Y}{Binary response vector (0/1).}
+
+\item{Indi}{Optional indicator matrix/data.frame.}
 
 \item{K}{Number of clusters (default 2).}
 
-\item{vargmm}{Column names or indices to use for GMM. Use compute_gemlr_params() to obtain.}
+\item{vargmm}{Column names or indices defining the POOL for GMM. NULL = all features.}
 
-\item{nseeds}{Number of kmeans seeds to try (default 3).}
+\item{VS}{Variable Selection for GMM. NA = use all in pool, Integer = select top VS by variance.}
 
-\item{rangeSeed}{Upper bound for random seed sampling (default 500).}
+\item{varreg}{Column names or indices for LR. NULL = all features.}
 
-\item{vlasso}{Lambda for Lasso penalty. Use compute_gemlr_params() to obtain.}
+\item{vlasso}{Lambda for Lasso. NULL = auto-compute.}
 
-\item{alphaLasso}{Elastic-net alpha for glmnet (default 0.5).}
+\item{nseeds}{Number of kmeans seeds (default 3).}
 
-\item{verbose}{Verbosity flag passed to GeMLR internals (0 = silent).}
+\item{rangeSeed}{Upper bound for seed sampling (default 500).}
 
-\item{x}{Numeric matrix/data.frame of predictors (n x p), ALREADY standardized (Xs from read_data()).}
+\item{alphaLasso}{Elastic-net alpha (default 0.5).}
 
-\item{y}{Binary response vector (0/1), length n.}
-}
-\value{
-An object of class "GeMLR_fit".
+\item{verbose}{Verbosity (default 0).}
 }
 \description{
 Quick GeMLR Fit Without Cross-Validation
