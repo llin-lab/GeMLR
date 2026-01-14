@@ -27,19 +27,17 @@ library(GeMLR)
 # Replace with full path to your data file with header (column names)
 result <- read_data(
   dat_path = "data/VASTd0_Indi.txt",
-  ycol = 20,
-  Indi_col = 1
+  ycol = 20,           # Column index for outcome
+  Indi_col = 1         # Column index for indicator
 )
 ```
 
-**Important:**
+**Parameters:**
 
-- `dat_path` must be the full path to a data file. Supports `.txt`, `.csv`, `.tsv`, `.xlsx`, `.rds`, `.sav`, `.sas7bdat`, `.dta` with column headers.
-- `ycol` is the column index (or name) for the binary outcome (e.g. infection). If NULL, uses the last column.
-- `Indi_col` is the column index (or name) for indicator variable(s) (e.g. vaccine group). Can be:
-  - A single value: `Indi_col = 1` or `Indi_col = "vaccination"`
-  - A vector: `Indi_col = c(1, 5)` for multiple indicators
-  - `NULL`: Auto-detects all binary variables (excluding Y) as indicators. **Warning**: This may include unwanted variables (e.g., gender, age groups). **Recommended to specify explicitly!**
+- `dat_path`: Full path to your data file. Supports `.txt`, `.csv`, `.tsv`, `.xlsx`, `.rds`, `.sav`, `.sas7bdat`, `.dta` with column headers.
+- `ycol`: Column index (or name) for the binary outcome (e.g., infection). If `NULL`, uses the last column.
+- `Indi_col`: Column index (or name) for indicator variable(s) (e.g., vaccine group). Can be a single value (`Indi_col = 1`), a vector (`Indi_col = c(1, 5)`), or `NULL` to auto-detect. **Recommended: specify explicitly.**
+
 ```r
 # Example data format
 > head_data <- head(read.table("data/VASTd0_Indi.txt"))
@@ -73,86 +71,27 @@ Y       <- result$Y        # Binary outcome (default: last column)
 Indi    <- result$Indi     # Indicator variable(s) (default: first column). For VAST data, means vaccinated or not.
 ```
 
+---
 
-### Step 4. Prepare Model Parameters
+## Quick Start: Direct Model Fitting
+------------------------------------------------------------------------
 
-```r
-# Compute vargmm and vlasso
-params <- compute_gemlr_params(
-  X = X,
-  Y = Y,
-  Indi = Indi,   
-  num_gmm = 5
-)
+If you already know the optimal number of clusters, use `fit_model()` for quick fitting:
 
-# Extract parameters
-vargmm <- params$vargmm
-vlasso <- params$vlasso
-```
-- `num_gmm` defines how many top-variable features (by variance) to use in the Gaussian Mixture Model (GMM)-based clustering. 
-  
-  - If you set `num_gmm` to a positive integer (recommended is 5), the function will select the top `num_gmm` variables with the highest variance for GMM input.
-  - If you set `num_gmm` = 0, you must provide a separate `gmm_var` argument to specify which variables to use. `gmm_var` can be a vector of column names or column indices.
-  - If you omit `num_gmm` entirely, all available variables (excluding Indi and Y) will be used in GMM by default.
-
-```r
-# Initialize model parameters
-MLMoption <- init_MLMoption(
-  alphaLasso = 0.8, 
-  vlasso = vlasso,       
-  numcmp = 1,            
-  stopratio = 1.0e-5,
-  verbose = 1, 
-  minloop = 3, 
-  maxloop = 50,         
-  constrain = "DIAS",
-  diagshrink = 0.9, 
-  kmseed = 0, 
-  algorithm = 1, 
-  kappa = -1,
-  AUC = 1, 
-  DISTR = "binomial", 
-  NOEM = 0, 
-  Yalpha = 1.0
-)
-```
-
-All model settings are specified within `MLMoption`. You may modify these values based on your study requirements, but we recommend doing so carefully and with reference to the original documentation.
-
-**Key parameters explained:**
-
-* `vargmm`: Column indices of features used for GMM clustering 
-* `vlasso`: Lasso penalty strength λ 
-* `alphaLasso`: Elastic net mixing parameter (1=Lasso, 0=Ridge, 0.5=equal mix)
-* `stopratio`: Convergence threshold controlling the number of EM iterations (default: `1.0e-5`)
-* `kappa`: Controls whether sample weights are used. Default is `-1`, which disables weighting
-* `verbose`: Verbosity flag (default: `1` = show messages)
-* `minloop`: Minimum number of EM iterations (default: `3`, must be ≥2)
-* `maxloop`: Maximum number of EM iterations
-* `constrain`: Covariance structure for GMMs (default: `'DIAS'`). Options include `'N'` (no constraint), `'EI'`, `'VI'`, `'EEE'`, `'VVV'`, `'DIA'`, `'DIAE'`, `'DIAS'`, `'EEV'`, `'VEV'`
-* `diagshrink`: Shrinkage toward diagonal in constrained models (default: `0.9`, only used for `'DIAS'`)
-* `algorithm`: Model fitting method (1 = Lasso-regularized logistic regression; 0 = logistic without variable selection)
-* `numcmp`: Number of clusters (default: `2`)
-* `AUC`: Selection metric for best seed (1 = AUC, 0 = accuracy)
-* `DISTR`: Distribution (default: `'binomial'` for classification; 'normal' for regression)
-* `NOEM`: Whether to use EM algorithm. If set to `1`, disables EM updates and only runs initialization
-
-At this point, all the raw materials needed to build the model are ready.
-
-**Alternative Quick Start:** If you already know the optimal number of clusters K (from prior analysis or domain knowledge), you can skip Steps 5-6 and directly use the `fit_model()` function for quick fitting:
 ```r
 # Quick model fitting without cross-validation
-
 fit <- fit_model(
-  X = Xs,              # Standardized features from read_data()
+  X = X,               # Raw features from read_data()
+  Xs = Xs,             # Standardized features from read_data()
   Y = Y,
   Indi = Indi,
-  K = 3,               # Specify number of clusters
-  vargmm = vargmm,
-  vlasso = vlasso,       # Automatically estimates lambda (step 4.2); or specify your own
-  nseeds = 10,         # Number of random initializations
-  alphaLasso = 0.8,
-  verbose = 0          # Set to 1 to see progress
+  K = 3,               
+  vargmm = NULL,       
+  VS = 5,              
+  vlasso = NULL,       
+  nseeds = 10,         
+  alphaLasso = 0.8,    
+  verbose = 1          
 )
 
 # View results
@@ -161,89 +100,106 @@ print(fit$beta)        # Cluster-specific coefficients
 
 # Visualize
 plot_beta_heatmap(fit$beta)
-
 ```
 
-Otherwise, continue with **Step 5** to use cross-validation to determine the optimal number of clusters.
+**Parameters:**
 
+- `K`: Number of clusters (e.g., 2, 3, or 4)
+- `vargmm`: Features for GMM clustering. `NULL` = use all features (recommended for initial analysis)
+- `VS`: Variable selection. `NA` = use all features in `vargmm` pool; integer (e.g., `5`) = select top 5 features by variance
+- `vlasso`: Lasso penalty strength. `NULL` = auto-compute via cross-validation (recommended)
+- `nseeds`: Number of random initializations (10-20 recommended for stability)
+- `alphaLasso`: Elastic net mixing parameter. `1` = Lasso, `0` = Ridge, `0.5` = equal mix
+- `verbose`: Verbosity level. `0` = quiet, `1` = show progress
 
-***
+---
 
-### Step 5. Select Optimal Model via Cross-Validation
+## Full Workflow: Cross-Validation for Optimal Number of Clusters
+------------------------------------------------------------------------
 
-To determine the optimal number of clusters, you can use the built-in cross-validation function `runCV()`.
+If you don't know the optimal number of clusters, use cross-validation:
+
+### Step 4. Run Cross-Validation
+
 ```r
-# Perform cross-validation to select the optimal number of clusters
-result2 <- runCV(
-  k = 5,                   # Number of folds used in cross-validation (user defined)
-  ncmp = c(2, 3, 4),       # Number of clusters to evaluate (user defined)
-  nseeds = 20,             # Number of random seeds used in k-means (user defined)
-  rangeSeed = 30,          # Maximum range of seeds to draw from (user defined)
-  vargmm = vargmm,           
-  Y = Y, 
-  X = X,                 
-  Indi = Indi, 
-  MLMoption = MLMoption
+
+# Perform cross-validation
+result_cv <- runCV(
+  k = 5,                   
+  ncmp = c(2, 3, 4),       
+  nseeds = 20,             
+  rangeSeed = 30,          
+  vargmm = 1:ncol(X),        # Use all features for GMM 
+  vlasso = NULL,           
+  Y = Y,                   
+  X = X,                   
+  Indi = Indi,             
+  alphaLasso = 0.8,        
+  verbose = 1              
 )
 
-# Extract and summarize CV results
-cvAUC   <- result2$cvAUCfinal
+# Extract results
+cvAUC <- result_cv$cvAUCfinal
 cv_mean <- apply(cvAUC, 2, mean)
+
 ```
 
-**Details**:
+**Parameters:**
 
-* `k`: Number of folds used in cross-validation.
-* `ncmp`: A vector of possible cluster counts to consider (e.g., `c(2, 3, 4)`). Users may define this based on prior knowledge or modeling goals.
-* `nseeds`: Number of k-means initializations per candidate model.
-* `rangeSeed`: The upper bound of the random seed range used to draw `nseeds`.
+- `k`: Number of cross-validation folds (typically 5 or 10)
+- `ncmp`: Vector of cluster numbers to evaluate (e.g., `c(2, 3, 4)`)
+- `rangeSeed`: Maximum seed range for sampling
 
+`result_cv$cvAUCfinal` is a matrix where:
+- Each **row** = one cross-validation fold
+- Each **column** = one cluster number from `ncmp`
 
-`runCV()` returns a list that includes `cvAUCfinal`, a matrix of AUC values:
-  
-- Each **column** corresponds to a different number of clusters (`ncmp`).
-- Each **row** represents one fold of cross-validation.
 ```r
-# Example output for ncmp = c(2, 3, 4)
-> result2$cvAUCfinal
+# Example output
+> result_cv$cvAUCfinal
          cluster=2 cluster=3 cluster=4
 1 fold      0.5111     0.7778     0.8889
 2 fold      0.6667     0.8333     0.8889
 3 fold      0.6400     0.7600     0.7000
 4 fold      0.6667     0.6667     0.7556
 5 fold      0.5111     0.7333     0.4889
+
+
 ```
 
-***
+The column with the highest mean AUC indicates the optimal K.
 
-### Step 6. Fit the Final Model
+### Step 5. Fit the Final Model
 
-Once you have identified the preferred number of clusters (based on average AUC or interpretability), you can fit the final model:
 ```r
 # Fit the final model using the best cluster setting
-result3 <- finalModel(
-  cvAUC = cvAUC, 
-  ncmp = c(2, 3, 4), 
-  nseeds = 20, 
-  rangeSeed = 30, 
-  vargmm = vargmm,       
-  Y = Y, 
-  Xs = Xs, 
-  X = X, 
-  Indi = Indi, 
-  MLMoption = MLMoption
+result_final <- finalModel(
+  cvAUCfinal = cvAUC,      
+  ncmp = c(2, 3, 4),       
+  nseeds = 20,             
+  rangeSeed = 30,          
+  vargmm = vargmm,         
+  vlasso = NULL,           
+  Y = Y,                   
+  Xs = Xs,                 
+  X = X,                   
+  Indi = Indi,             
+  alphaLasso = 0.8,        
+  verbose = 1              
 )
 ```
 
-### Step 7. Visualize Cluster-Specific Coefficients
+**Note:** `finalModel()` automatically selects the best K based on highest mean AUC from `cvAUCfinal`.
+
+### Step 6. Visualize Cluster-Specific Coefficients
 
 You can inspect the model's coefficients for each cluster by visualizing the heatmap of β coefficients using the `plot_beta_heatmap` function:
 ```r
 # Show the picture in the sidebar
-plot_beta_heatmap(result3$beta)
+plot_beta_heatmap(result_final$beta)
 
 # Save the picture
-plot_beta_heatmap(result3$beta, output_file = "beta_heatmap.png")
+plot_beta_heatmap(result_final$beta, output_file = "beta_heatmap.png")
 ```
 
 This function will generate a heatmap where:
@@ -255,8 +211,274 @@ This function will generate a heatmap where:
 Then you will see a plot similar to this:
 ![](https://github.com/llin-lab/GeMLR/blob/main/example.png "Example Image")
 
+---
+
+## Example: CVIA078 Malaria Vaccine Study
+------------------------------------------------------------------------
+
+This example demonstrates how GeMLR can be applied to different analysis tasks using the CVIA078 dataset, which includes 117 subjects, 66 antibody features (33 at V5/1 month, 33 at V20/6 months), and demographics (AGE, SEX, SICKLE).
+
+### Data Preprocessing
+
+```r
+# Load and preprocess CVIA078 data
+source("CVIA078_preprocess_corrected.R")
+
+# After preprocessing, you will have:
+# Y: Binary infection outcome (117 subjects)
+# X_full_raw: Raw antibody data (117 × 66)
+# X_full_scaled: Standardized antibody data (117 × 66)
+# Indi_full: Demographics matrix (AGE, SEX, SICKLE)
+```
+
+### Task 1: Single Feature with Demographics
+
+**Purpose:** Run analysis using a single antibody feature with AGE, sickle cell trait, and Sex as covariates.
+
+```r
+library(glmnet)
+library(pROC)
+library(caret)
+library(GeMLR)
+
+# Prepare data
+X_full <- cbind(V5_features, V20_features)
+X_full_raw <- X_full
+X_full_scaled <- as.data.frame(scale(X_full))
+colnames(X_full_scaled) <- colnames(X_full)
+
+# Task 1: Use first 2 V5 features (minimum for GMM stability)
+vargmm_idx_1 <- c(1, 2)
+varreg_idx_1 <- c(1, 2)
+
+# Fit initial model
+fit_task1 <- fit_model(
+  X = X_full_raw,
+  Xs = X_full_scaled,
+  Y = Y,
+  Indi = as.matrix(Indi_full),
+  K = 2,
+  vargmm = vargmm_idx_1,
+  VS = NA,
+  varreg = varreg_idx_1,
+  nseeds = 3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+vargmm_1 <- fit_task1$vargmm
+varreg_1 <- fit_task1$varreg
+vlasso_1 <- fit_task1$vlasso
+
+# Cross-validation
+result_cv_1 <- runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = vargmm_1,
+  vlasso = vlasso_1,
+  Y = Y,
+  X = X_full_raw,
+  Indi = as.matrix(Indi_full),
+  alphaLasso = 0.8
+)
+
+print(result_cv_1$cvAUCfinal)
+
+# Final model
+result_final_1 <- finalModel(
+  cvAUCfinal = result_cv_1$cvAUCfinal,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = vargmm_1,
+  vlasso = vlasso_1,
+  Y = Y,
+  Xs = X_full_scaled,
+  X = X_full_raw,
+  Indi = as.matrix(Indi_full),
+  varreg = varreg_1,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Visualize
+png("CVIA078_task1_heatmap.png", width = 10, height = 8, units = "in", res = 300)
+plot_beta_heatmap(result_final_1$beta)
+dev.off()
+```
+
+**Cross-validation results:**
+```r
+> result_cv_1$cvAUCfinal
+         cluster=2 cluster=3 cluster=4
+1 fold   0.5929    0.4500    0.5000
+2 fold   0.6875    0.5714    0.7143
+3 fold   0.7778    0.7847    0.7014
+4 fold   0.5500    0.5833    0.6417
+5 fold   0.6515    0.7121    0.6667
+```
+
+### Task 2: V5 for GMM, V20 for Logistic Regression
+
+**Purpose:** Use V5 antibodies (1 month post-vaccination) for GMM clustering and V20 antibodies (6 months) for logistic regression prediction.
+
+```r
+# Define pools
+v5_indices <- 1:ncol(V5_features)
+v20_indices <- (ncol(V5_features) + 1):ncol(X_full)
+
+# Fit model with feature selection
+fit_task2 <- fit_model(
+  X = X_full_raw,
+  Xs = X_full_scaled,
+  Y = Y,
+  Indi = as.matrix(Indi_full),
+  K = 2,
+  vargmm = v5_indices,
+  VS = 5,
+  varreg = v20_indices,
+  nseeds = 3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+vargmm_2 <- fit_task2$vargmm
+varreg_2 <- fit_task2$varreg
+vlasso_2 <- fit_task2$vlasso
+
+# Cross-validation
+result_cv_2 <- runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = vargmm_2,
+  vlasso = vlasso_2,
+  Y = Y,
+  X = X_full_raw,
+  Indi = as.matrix(Indi_full),
+  alphaLasso = 0.8
+)
+
+print(result_cv_2$cvAUCfinal)
+
+# Final model
+result_final_2 <- finalModel(
+  cvAUCfinal = result_cv_2$cvAUCfinal,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = vargmm_2,
+  vlasso = vlasso_2,
+  Y = Y,
+  Xs = X_full_scaled,
+  X = X_full_raw,
+  Indi = as.matrix(Indi_full),
+  varreg = varreg_2,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Visualize
+png("CVIA078_task2_heatmap.png", width = 10, height = 10, units = "in", res = 300)
+plot_beta_heatmap(result_final_2$beta)
+dev.off()
+```
+
+**Cross-validation results:**
+```r
+> result_cv_2$cvAUCfinal
+         cluster=2 cluster=3 cluster=4
+1 fold   0.5857    0.6000    0.6571
+2 fold   0.5982    0.5625    0.6696
+3 fold   0.5833    0.5694    0.5833
+4 fold   0.6167    0.5250    0.6250
+5 fold   0.5758    0.4621    0.7348
+```
+
+### Task 3: Top 5 Variable Features for GMM, Remaining for LR
+
+**Purpose:** Select top 5 highly variable features among all V5 and V20 antibodies for GMM clustering, and use the remaining features for logistic regression.
+
+```r
+# Define pool (all features)
+all_indices <- 1:ncol(X_full)
+
+# Fit model with feature selection
+fit_task3 <- fit_model(
+  X = X_full_raw,
+  Xs = X_full_scaled,
+  Y = Y,
+  Indi = as.matrix(Indi_full),
+  K = 2,
+  vargmm = all_indices,
+  VS = 5,
+  varreg = all_indices,
+  nseeds = 3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+vargmm_3 <- fit_task3$vargmm
+varreg_3 <- fit_task3$varreg
+vlasso_3 <- fit_task3$vlasso
+
+# Cross-validation
+result_cv_3 <- runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = vargmm_3,
+  vlasso = vlasso_3,
+  Y = Y,
+  X = X_full_raw,
+  Indi = as.matrix(Indi_full),
+  alphaLasso = 0.8
+)
+
+print(result_cv_3$cvAUCfinal)
+
+# Final model
+result_final_3 <- finalModel(
+  cvAUCfinal = result_cv_3$cvAUCfinal,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = vargmm_3,
+  vlasso = vlasso_3,
+  Y = Y,
+  Xs = X_full_scaled,
+  X = X_full_raw,
+  Indi = as.matrix(Indi_full),
+  varreg = varreg_3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Visualize
+png("CVIA078_task3_heatmap.png", width = 10, height = 10, units = "in", res = 300)
+plot_beta_heatmap(result_final_3$beta)
+dev.off()
+```
+
+**Cross-validation results:**
+```r
+> result_cv_3$cvAUCfinal
+         cluster=2 cluster=3 cluster=4
+1 fold   0.5857    0.6000    0.6571
+2 fold   0.5982    0.5625    0.6696
+3 fold   0.5833    0.5694    0.5833
+4 fold   0.6167    0.5250    0.6250
+5 fold   0.5758    0.4621    0.7348
+```
+
+---
+
 ## Citation
 ------------------------------------------------------------------------
-The content of this package is sourced from the following article. If you use it, please quote:
+If you use this package, please cite:
 
 [1] Lin, Lin, et al. "GeM-LR: Discovering predictive biomarkers for small datasets in vaccine studies." PLoS computational biology 20.11 (2024): e1012581.
