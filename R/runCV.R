@@ -9,12 +9,14 @@
 #' 2. Requires vargmm to select at least 2 features (length(vargmm) >= 2)
 #'    - GeMLR GMM cannot handle single-feature clustering (covariance degeneracy)
 #'    - For single-feature tasks, use vargmm = c(1, 2) or K = 1
+#' 3. Added p_safe processing: Ensures predicted probabilities are in [0, 1]
 #'
 #' @param k the number of folds of cross-validation
 #' @param ncmp the number of clusters
 #' @param nseeds the number of random seeds
 #' @param rangeSeed the largest number among random seeds
 #' @param vargmm the index of variables that are used in gmm (must select >= 2 features)
+#' @param varreg (optional) the index of variables used in logistic regression. If NULL, uses all variables
 #' @param vlasso Lambda for Lasso penalty
 #' @param Y the response variable
 #' @param X all independent variables
@@ -32,7 +34,7 @@
 #' @export
 #'
 runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30, 
-                  vargmm, vlasso, Y, X, Indi, 
+                  vargmm, varreg = NULL, vlasso, Y, X, Indi, 
                   alphaLasso = 0.8,
                   stopratio = 1.0e-5,
                   verbose = 1,
@@ -67,6 +69,14 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
   rseeds <- sample(1:rangeSeed, nseeds, replace = FALSE)
   dim <- ncol(X)
   
+  # Determine which variables to use for logistic regression
+  # If varreg is NULL, use all variables
+  if (is.null(varreg)) {
+    varreg_to_use <- 1:dim
+  } else {
+    varreg_to_use <- varreg
+  }
+  
   for (ifold in 1:k) {
     test_index <- tuningK2[[ifold]]
     training_index <- setdiff(seq_along(Y), test_index)
@@ -79,16 +89,17 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
     Xtt <- scale(X[test_index, ], center = Ctest1, scale = Stest1)
     Ytt <- Y[test_index]
     
+    # Construct data for logistic regression using varreg_to_use
     # CRITICAL FIX: Ensure matrix type (not list or data.frame)
     if (is.null(Indi)) {
-      Xtrain_indi <- Xtraining
-      Xtt_indi <- Xtt
+      Xtrain_indi <- Xtraining[, varreg_to_use, drop = FALSE]
+      Xtt_indi <- Xtt[, varreg_to_use, drop = FALSE]
     } else {
       # Convert to matrix BEFORE cbind to prevent list creation
       Indi_train <- as.matrix(Indi[training_index, , drop = FALSE])
       Indi_test <- as.matrix(Indi[test_index, , drop = FALSE])
-      Xtrain_indi <- cbind(Xtraining, Indi_train)
-      Xtt_indi <- cbind(Xtt, Indi_test)
+      Xtrain_indi <- cbind(Xtraining[, varreg_to_use, drop = FALSE], Indi_train)
+      Xtt_indi <- cbind(Xtt[, varreg_to_use, drop = FALSE], Indi_test)
     }
     
     for (jj in 1:lcmp) {
@@ -113,7 +124,8 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
       )
       MLMoption$lambdaLasso <- rep(vlasso, ncmp[jj])
       
-      est <- estimateBestSD(Xtraining[, vargmm], Xtrain_indi, Ytraining, MLMoption, rseeds)
+      # GMM uses vargmm, LR uses varreg_to_use
+      est <- estimateBestSD(Xtraining[, vargmm, drop = FALSE], Xtrain_indi, Ytraining, MLMoption, rseeds)
       c <- est[[1]]
       beta <- est[[2]]
       bestseed[ifold, jj] <- est[[8]]
@@ -124,8 +136,13 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
       mu2 <- gmm[[3]]
       sigma2 <- gmm[[4]]
       
-      mlm <- MLMclassify(a2, mu2, sigma2, beta, Xtt[, vargmm], Xtt_indi)
+      mlm <- MLMclassify(a2, mu2, sigma2, beta, Xtt[, vargmm, drop = FALSE], Xtt_indi)
       pyi <- mlm[[1]]
+      
+      # Ensure probabilities are in valid range [0, 1]
+      eps <- 1e-12
+      pyi[!is.finite(pyi)] <- NA
+      pyi <- pmin(pmax(pyi, eps), 1 - eps)
       
       auc <- as.numeric(pROC::auc(Ytt, pyi))
       cvAUCfinal[ifold, jj] <- auc

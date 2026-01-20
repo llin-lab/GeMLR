@@ -33,7 +33,7 @@ runCV(
 
 \item{rangeSeed}{the largest number among random seeds}
 
-\item{vargmm}{the index of variables that are used in gmm}
+\item{vargmm}{the index of variables that are used in gmm (must select >= 2 features)}
 
 \item{vlasso}{Lambda for Lasso penalty}
 
@@ -41,7 +41,7 @@ runCV(
 
 \item{X}{all independent variables}
 
-\item{Indi}{dummy variable}
+\item{Indi}{dummy variable (covariates, only in LR not GMM)}
 
 \item{alphaLasso}{Elastic net parameter (default 0.8)}
 
@@ -63,5 +63,19 @@ runCV(
 all AUC informations and the final classification result
 }
 \description{
-Run Cross-Verified for GeM-LR with number of components being ncmp.
+Run Cross-Validation for GeM-LR with number of components being ncmp.
+
+CRITICAL FIXES:
+\enumerate{
+\item Data type fix: Use as.matrix(Indi) instead of as.data.frame(Indi)
+\itemize{
+\item Prevents list creation in cbind
+\item Ensures estimateBestSD receives proper matrix input
+}
+\item Requires vargmm to select at least 2 features (length(vargmm) >= 2)
+\itemize{
+\item GeMLR GMM cannot handle single-feature clustering (covariance degeneracy)
+\item For single-feature tasks, use vargmm = c(1, 2) or K = 1
+}
+}
 }

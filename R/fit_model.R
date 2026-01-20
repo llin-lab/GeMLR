@@ -242,7 +242,7 @@ fit_model <- function(X, Xs, Y, Indi = NULL,
   
   structure(list(
     beta = beta, a2 = a2, mu2 = mu2, sigma2 = sigma2,
-    pij = pij, p = pyi, clusterid = clusterid,
+    pij = pij, p = p_safe, clusterid = clusterid,
     scaler = NULL, K = K, 
     vargmm = idx_gmm, varreg = idx_reg, vlasso = vlasso,
     metrics = metrics, call = match.call()

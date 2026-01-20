@@ -1,4 +1,4 @@
-# GeMLR: Generative Mixture of Logistic Regression<a/></a>
+# GeMLR: Generative Mixture of Logistic Regression
 
 **GeMLR** is an R package for predictive clustering, particularly well-suited for small datasets common in vaccine studies. It simultaneously delivers strong predictive performance and interpretability by identifying latent subgroups with shared biomarker-outcome relationships.
 
@@ -23,6 +23,7 @@ library(GeMLR)
 ```
 
 ### Step 2. Read the data
+#### Option A: Read from text file (e.g., .txt, .csv)
 ```r
 # Replace with full path to your data file with header (column names)
 result <- read_data(
@@ -31,10 +32,24 @@ result <- read_data(
   Indi_col = 1         # Column index for indicator
 )
 ```
+#### Option B: Read from RData file (data frame)
+```r
+# For demonstration only - preprocess example RData
+# If your data is already clean, skip to read_data() directly
+load("data/VASTd0_log.RData") 
+dfd0$Vaccine <- ifelse(dfd0$Vaccine == "Vi-TT", 0, 1)
+dfd0$Diagnosis <- NULL
 
+result <- read_data(
+  dat = dfd0,          
+  ycol = "Y",
+  Indi_col = "Vaccine"
+)
+
+```
 **Parameters:**
 
-- `dat_path`: Full path to your data file. Supports `.txt`, `.csv`, `.tsv`, `.xlsx`, `.rds`, `.sav`, `.sas7bdat`, `.dta` with column headers.
+- `dat_path`: Full path to your data file. Supports `.txt`, `.csv`, `.tsv`, `.xlsx`, `.rds`, `.rda`, `.RData`, `.sav`, `.sas7bdat`, `.dta`, `.dat` with column headers.
 - `ycol`: Column index (or name) for the binary outcome (e.g., infection). If `NULL`, uses the last column.
 - `Indi_col`: Column index (or name) for indicator variable(s) (e.g., vaccine group). Can be a single value (`Indi_col = 1`), a vector (`Indi_col = c(1, 5)`), or `NULL` to auto-detect. **Recommended: specify explicitly.**
 
@@ -88,6 +103,7 @@ fit <- fit_model(
   K = 3,               
   vargmm = NULL,       
   VS = 5,              
+  varreg = NULL,              
   vlasso = NULL,       
   nseeds = 10,         
   alphaLasso = 0.8,    
@@ -107,6 +123,7 @@ plot_beta_heatmap(fit$beta)
 - `K`: Number of clusters (e.g., 2, 3, or 4)
 - `vargmm`: Features for GMM clustering. `NULL` = use all features (recommended for initial analysis)
 - `VS`: Variable selection. `NA` = use all features in `vargmm` pool; integer (e.g., `5`) = select top 5 features by variance
+- `varreg`: Features for logistic regression. `NULL` = use all features
 - `vlasso`: Lasso penalty strength. `NULL` = auto-compute via cross-validation (recommended)
 - `nseeds`: Number of random initializations (10-20 recommended for stability)
 - `alphaLasso`: Elastic net mixing parameter. `1` = Lasso, `0` = Ridge, `0.5` = equal mix
@@ -117,20 +134,44 @@ plot_beta_heatmap(fit$beta)
 ## Full Workflow: Cross-Validation for Optimal Number of Clusters
 ------------------------------------------------------------------------
 
-If you don't know the optimal number of clusters, use cross-validation:
+If you don't know the optimal number of clusters, use cross-validation. 
 
-### Step 4. Run Cross-Validation
+### Step 4. Initial Model Fitting
+
+First, fit an initial model to determine which features to use:
 
 ```r
+# Fit initial model with variable selection
+fit <- fit_model(
+  X = X,
+  Xs = Xs,
+  Y = Y,
+  Indi = Indi,
+  K = 3,                
+  vargmm = NULL,        
+  VS = 5,               
+  varreg = NULL,        
+  vlasso = NULL,
+  nseeds = 10,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+```
 
+### Step 5. Run Cross-Validation
+
+Use the selected features from `fit` to evaluate different cluster numbers:
+
+```r
 # Perform cross-validation
 result_cv <- runCV(
   k = 5,                   
   ncmp = c(2, 3, 4),       
   nseeds = 20,             
   rangeSeed = 30,          
-  vargmm = 1:ncol(X),        # Use all features for GMM 
-  vlasso = NULL,           
+  vargmm = fit$vargmm,  
+  varreg = fit$varreg,  
+  vlasso = fit$vlasso,            
   Y = Y,                   
   X = X,                   
   Indi = Indi,             
@@ -169,7 +210,7 @@ cv_mean <- apply(cvAUC, 2, mean)
 
 The column with the highest mean AUC indicates the optimal K.
 
-### Step 5. Fit the Final Model
+### Step 6. Fit the Final Model
 
 ```r
 # Fit the final model using the best cluster setting
@@ -178,8 +219,9 @@ result_final <- finalModel(
   ncmp = c(2, 3, 4),       
   nseeds = 20,             
   rangeSeed = 30,          
-  vargmm = vargmm,         
-  vlasso = NULL,           
+  vargmm = fit$vargmm,  
+  varreg = fit$varreg,  
+  vlasso = fit$vlasso,            
   Y = Y,                   
   Xs = Xs,                 
   X = X,                   
@@ -191,7 +233,7 @@ result_final <- finalModel(
 
 **Note:** `finalModel()` automatically selects the best K based on highest mean AUC from `cvAUCfinal`.
 
-### Step 6. Visualize Cluster-Specific Coefficients
+### Step 7. Visualize Cluster-Specific Coefficients
 
 You can inspect the model's coefficients for each cluster by visualizing the heatmap of β coefficients using the `plot_beta_heatmap` function:
 ```r
@@ -204,16 +246,270 @@ plot_beta_heatmap(result_final$beta, output_file = "beta_heatmap.png")
 
 This function will generate a heatmap where:
 
-* Rows correspond to variables (features + Indi)
+* Rows correspond to variables 
 * Columns correspond to clusters
 * Cell color indicates magnitude and sign of coefficients
 
 Then you will see a plot similar to this:
 ![](https://github.com/llin-lab/GeMLR/blob/main/example.png "Example Image")
 
+## Example: VAST Vaccine Study - Multiple Analysis Tasks
+------------------------------------------------------------------------
+
+This example demonstrates three different analysis strategies using the VAST dataset (VASTd0_Indi.txt), which contains 300 subjects with 18 immune features plus a vaccine indicator.
+
+**Data structure:**
+- V1: Vaccine indicator (0/1)
+- V2-V19: 18 immune features
+- V20: Binary infection outcome (0/1)
+
+### Data Preparation
+
+```r
+library(glmnet)
+library(pROC)
+library(caret)
+library(GeMLR)
+
+# Read data
+result <- read_data(
+  dat_path = "data/VASTd0_Indi.txt",
+  ycol = 20,
+  Indi_col = 1
+)
+
+# Extract components
+X <- result$X
+Xs <- result$Xs
+Y <- result$Y
+Indi <- result$Indi
+```
+
+### Task 1: Single Feature Analysis with Vaccine Indicator
+
+**Purpose:** Analyze using only two features (V2, V3) with vaccine indicator.
+
+```r
+# Use features V2 and V3 (columns 1-2 in X)
+vargmm_1 <- c(1, 2)
+varreg_1 <- c(1, 2)
+
+# Fit initial model
+fit_task1 <- fit_model(
+  X = X,
+  Xs = Xs,
+  Y = Y,
+  Indi = Indi,
+  K = 2,
+  vargmm = vargmm_1,
+  VS = NA,
+  varreg = varreg_1,
+  nseeds = 3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Cross-validation
+result_cv_1 <- runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = fit_task1$vargmm,
+  varreg = fit_task1$varreg,
+  vlasso = fit_task1$vlasso,
+  Y = Y,
+  X = X,
+  Indi = Indi,
+  alphaLasso = 0.8
+)
+
+print(result_cv_1$cvAUCfinal)
+
+# Final model
+result_final_1 <- finalModel(
+  cvAUCfinal = result_cv_1$cvAUCfinal,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = fit_task1$vargmm,
+  varreg = fit_task1$varreg,
+  vlasso = fit_task1$vlasso,
+  Y = Y,
+  Xs = Xs,
+  X = X,
+  Indi = Indi,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Visualize
+png("VAST_task1_heatmap.png", width = 10, height = 8, units = "in", res = 300)
+plot_beta_heatmap(result_final_1$beta)
+dev.off()
+```
+
+**Cross-validation results:**
+```r
+> result_cv_1$cvAUCfinal
+         cluster=2 cluster=3 cluster=4
+1 fold    0.5909    0.5000    0.6591
+2 fold    0.5333    0.4889    0.5556
+3 fold    0.6786    0.6250    0.6607
+4 fold    1.0000    1.0000    1.0000
+5 fold    0.5000    0.5000    0.5625
+```
+
+### Task 2: Feature Grouping Strategy
+
+**Purpose:** Use features V2-V10 for GMM clustering and features V11-V19 for logistic regression.
+
+```r
+# Define feature groups
+group1_features <- 1:9   # V2-V10 (columns 1-9 in X)
+group2_features <- 10:18  # V11-V19 (columns 10-18 in X)
+
+# Fit model
+fit_task2 <- fit_model(
+  X = X,
+  Xs = Xs,
+  Y = Y,
+  Indi = Indi,
+  K = 2,
+  vargmm = group1_features,
+  VS = NA,
+  varreg = group2_features,
+  nseeds = 3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Cross-validation
+result_cv_2 <- runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = fit_task2$vargmm,
+  varreg = fit_task2$varreg,
+  vlasso = fit_task2$vlasso,
+  Y = Y,
+  X = X,
+  Indi = Indi,
+  alphaLasso = 0.8
+)
+
+print(result_cv_2$cvAUCfinal)
+
+# Final model
+result_final_2 <- finalModel(
+  cvAUCfinal = result_cv_2$cvAUCfinal,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = fit_task2$vargmm,
+  varreg = fit_task2$varreg,
+  vlasso = fit_task2$vlasso,
+  Y = Y,
+  Xs = Xs,
+  X = X,
+  Indi = Indi,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Visualize
+png("VAST_task2_heatmap.png", width = 10, height = 10, units = "in", res = 300)
+plot_beta_heatmap(result_final_2$beta)
+dev.off()
+```
+
+**Cross-validation results:**
+```r
+> result_cv_2$cvAUCfinal
+         cluster=2 cluster=3 cluster=4
+1 fold    0.6364    0.6364    0.5682
+2 fold    0.4889    0.6000    0.5111
+3 fold    0.6429    0.6964    0.6071
+4 fold    1.0000    1.0000    1.0000
+5 fold    0.5417    0.4792    0.6042
+```
+
+### Task 3: Top Variable Features
+
+**Purpose:** Select top 5 most variable features from all 18 features for GMM, use all features for logistic regression.
+
+```r
+# Use all features as pool, select top 5 by variance
+all_features <- 1:18
+
+# Fit model with feature selection
+fit_task3 <- fit_model(
+  X = X,
+  Xs = Xs,
+  Y = Y,
+  Indi = Indi,
+  K = 2,
+  vargmm = all_features,
+  VS = 5,
+  varreg = all_features,
+  nseeds = 3,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Cross-validation
+result_cv_3 <- runCV(
+  k = 5,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = fit_task3$vargmm,
+  varreg = fit_task3$varreg,
+  vlasso = fit_task3$vlasso,
+  Y = Y,
+  X = X,
+  Indi = Indi,
+  alphaLasso = 0.8
+)
+
+print(result_cv_3$cvAUCfinal)
+
+# Final model
+result_final_3 <- finalModel(
+  cvAUCfinal = result_cv_3$cvAUCfinal,
+  ncmp = c(2, 3, 4),
+  nseeds = 20,
+  rangeSeed = 30,
+  vargmm = fit_task3$vargmm,
+  varreg = fit_task3$varreg,
+  vlasso = fit_task3$vlasso,
+  Y = Y,
+  Xs = Xs,
+  X = X,
+  Indi = Indi,
+  alphaLasso = 0.8,
+  verbose = 1
+)
+
+# Visualize
+png("VAST_task3_heatmap.png", width = 10, height = 10, units = "in", res = 300)
+plot_beta_heatmap(result_final_3$beta)
+dev.off()
+```
+
+**Cross-validation results:**
+```r
+> result_cv_3$cvAUCfinal
+         cluster=2 cluster=3 cluster=4
+1 fold    0.9091    0.6818    0.4091
+2 fold    0.6000    0.6889    0.6000
+3 fold    0.5714    0.6429    0.3750
+4 fold    0.9231    0.8462    0.8462
+5 fold    0.4792    0.6667    0.5625
+```
+
 ---
-
-
 
 ## Citation
 ------------------------------------------------------------------------

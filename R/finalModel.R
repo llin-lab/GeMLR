@@ -12,7 +12,7 @@
 #' @param Xs the standardized independent variables
 #' @param X the raw input of independent variables
 #' @param Indi the dummy variables
-#' @param varreg (optional) Variables for logistic regression. If NULL, uses vargmm
+#' @param varreg (optional) Variables for logistic regression. If NULL, uses all variables
 #' @param alphaLasso Elastic net parameter (default 0.8)
 #' @param stopratio Convergence threshold (default 1.0e-5)
 #' @param verbose Verbosity flag (default 1)
@@ -37,17 +37,15 @@ finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed,
                        AUC = 1,
                        DISTR = "binomial") {
   dimgmm <- length(vargmm)
+  dim <- ncol(X)
   
   maxvf <- max(colMeans(cvAUCfinal))
   maxcmp <- which.max(colMeans(cvAUCfinal))
   
   # Determine which variables to use for logistic regression
-  # If varreg is NULL, use vargmm (same variables for GMM and LR)
+  # If varreg is NULL, use all variables
   if (is.null(varreg)) {
-    varreg_to_use <- vargmm
-    if (verbose > 0) {
-      cat("varreg not specified. Using vargmm for logistic regression.\n")
-    }
+    varreg_to_use <- 1:dim
   } else {
     varreg_to_use <- varreg
   }
