@@ -256,26 +256,22 @@ Then you will see a plot similar to this:
 ## Example: VAST Vaccine Study - Multiple Analysis Tasks
 ------------------------------------------------------------------------
 
-This example demonstrates three different analysis strategies using the VAST dataset (VASTd0_Indi.txt), which contains 300 subjects with 18 immune features plus a vaccine indicator.
-
-**Data structure:**
-- V1: Vaccine indicator (0/1)
-- V2-V19: 18 immune features
-- V20: Binary infection outcome (0/1)
+This example demonstrates three different analysis strategies using the VAST dataset (VASTd0_log.RData), which contains subjects with 18 immune features plus a vaccine indicator.
 
 ### Data Preparation
 
 ```r
-library(glmnet)
-library(pROC)
-library(caret)
-library(GeMLR)
 
-# Read data
+# Load and preprocess data
+load("data/VASTd0_log.RData")
+dfd0$Vaccine <- ifelse(dfd0$Vaccine == "Vi-TT", 0, 1)
+dfd0$Diagnosis <- NULL
+
+# Read data using GeMLR
 result <- read_data(
-  dat_path = "data/VASTd0_Indi.txt",
-  ycol = 20,
-  Indi_col = 1
+  dat = dfd0,
+  ycol = "Y",
+  Indi_col = "Vaccine"
 )
 
 # Extract components
@@ -287,10 +283,10 @@ Indi <- result$Indi
 
 ### Task 1: Single Feature Analysis with Vaccine Indicator
 
-**Purpose:** Analyze using only two features (V2, V3) with vaccine indicator.
+**Purpose:** Analyze using only the first two features with vaccine indicator.
 
 ```r
-# Use features V2 and V3 (columns 1-2 in X)
+# Use first two features (columns 1-2 in X)
 vargmm_1 <- c(1, 2)
 varreg_1 <- c(1, 2)
 
@@ -353,21 +349,21 @@ dev.off()
 ```r
 > result_cv_1$cvAUCfinal
          cluster=2 cluster=3 cluster=4
-1 fold    0.5909    0.5000    0.6591
-2 fold    0.5333    0.4889    0.5556
-3 fold    0.6786    0.6250    0.6607
-4 fold    1.0000    1.0000    1.0000
-5 fold    0.5000    0.5000    0.5625
+1 fold    0.5795    0.5000    0.6591
+2 fold    0.5222    0.5333    0.5111
+3 fold    0.6786    0.6161    0.5893
+4 fold    0.9615    0.9231    0.9615
+5 fold    0.5313    0.4792    0.5417
 ```
 
 ### Task 2: Feature Grouping Strategy
 
-**Purpose:** Use features V2-V10 for GMM clustering and features V11-V19 for logistic regression.
+**Purpose:** Use first half of features for GMM clustering and second half for logistic regression.
 
 ```r
 # Define feature groups
-group1_features <- 1:9   # V2-V10 (columns 1-9 in X)
-group2_features <- 10:18  # V11-V19 (columns 10-18 in X)
+group1_features <- 1:9   # First half features (columns 1-9 in X)
+group2_features <- 10:18  # Second half features (columns 10-18 in X)
 
 # Fit model
 fit_task2 <- fit_model(
@@ -428,16 +424,16 @@ dev.off()
 ```r
 > result_cv_2$cvAUCfinal
          cluster=2 cluster=3 cluster=4
-1 fold    0.6364    0.6364    0.5682
-2 fold    0.4889    0.6000    0.5111
-3 fold    0.6429    0.6964    0.6071
-4 fold    1.0000    1.0000    1.0000
-5 fold    0.5417    0.4792    0.6042
+1 fold    0.6705    0.6364    0.6023
+2 fold    0.4556    0.5556    0.5556
+3 fold    0.6786    0.5536    0.5625
+4 fold    0.8846    0.8077    0.8462
+5 fold    0.5521    0.6042    0.6562
 ```
 
 ### Task 3: Top Variable Features
 
-**Purpose:** Select top 5 most variable features from all 18 features for GMM, use all features for logistic regression.
+**Purpose:** Select top 5 most variable features from all available features for GMM, use all features for logistic regression.
 
 ```r
 # Use all features as pool, select top 5 by variance
@@ -502,11 +498,11 @@ dev.off()
 ```r
 > result_cv_3$cvAUCfinal
          cluster=2 cluster=3 cluster=4
-1 fold    0.9091    0.6818    0.4091
-2 fold    0.6000    0.6889    0.6000
-3 fold    0.5714    0.6429    0.3750
-4 fold    0.9231    0.8462    0.8462
-5 fold    0.4792    0.6667    0.5625
+1 fold    0.9091    0.6932    0.4432
+2 fold    0.6222    0.6111    0.5778
+3 fold    0.5536    0.5714    0.5893
+4 fold    0.8462    0.7692    0.8462
+5 fold    0.5625    0.7083    0.5000
 ```
 
 ---
