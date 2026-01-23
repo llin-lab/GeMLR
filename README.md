@@ -20,6 +20,7 @@ This example walks through using the VAST dataset (included in the \data folder)
 ### Step 1. Load the package
 ```r
 library(GeMLR)
+library(glmnet)
 ```
 
 ### Step 2. Read the data
