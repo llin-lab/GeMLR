@@ -10,10 +10,10 @@
 GMMFormatConvert <- function(dim,c){
   numcmp=length(c$w);
   a=c$w;
-  mu=c$supp[1:dim,];
+  mu=c$supp[1:dim, , drop=FALSE];
   start_ind = dim+1;
   end_ind = dim+dim*dim
-  sigma = as.vector(unlist(c$supp[start_ind:end_ind,]))
+  sigma = as.vector(unlist(c$supp[start_ind:end_ind, , drop=FALSE]))
   dim(sigma) = c(dim,dim,numcmp)
   return(list(numcmp = numcmp, a = a, mu = mu, sigma = sigma))
 }

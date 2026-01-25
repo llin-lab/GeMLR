@@ -12,10 +12,10 @@
 checksingular <- function(sigma, Xvar, shrinkrate) {
   dim <- nrow(sigma)
   sigmanew <- sigma
-
+  
   thred <- mean(Xvar) * 1.0e-4
   t <- mean(diag(sigma))
-
+  
   if (rcond(sigma) < 1.0e-8 || t < thred) {
     v1 <- sum(diag(sigma)) / dim
     for (i in 1:dim) {
@@ -25,9 +25,9 @@ checksingular <- function(sigma, Xvar, shrinkrate) {
     return(sigmanew)
   }
   sigmanew <- sigma
-
+  
   t <- mean(diag(sigma))
-
+  
   if (rcond(sigma) < 1.0e-8 || t < thred) {
     v1 <- mean(Xvar)
     for (i in 1:dim) {
@@ -37,14 +37,14 @@ checksingular <- function(sigma, Xvar, shrinkrate) {
     return(sigmanew)
   }
   sigmanew <- sigma
-
+  
   t <- mean(diag(sigma))
-
+  
   if (rcond(sigma) < 1.0e-8 || t < thred) {
     warning('Unable to solve singular covariance matrix, recommend to modify data')
     #print(sigma)
     stop('checksingular: failed to modify sigma to be away from singular')
   }
-
+  
   return(sigmanew)
 }

@@ -19,7 +19,7 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
   dim <- ncol(X)
   dimlogit <- ncol(Xlogit)
   numcmp <- length(cinit$w)
-
+  
   lambdaLasso <- rep(0, numcmp)
   m <- length(MLMoption$lambdaLasso)
   k <- 1
@@ -30,9 +30,9 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
       k <- 1
     }
   }
-
+  
   Wi <- rep(1, numdata)
-
+  
   Xvar <- apply(X, 2, var)
   if (mean(Xvar) < 1.0e-6) {
     cat('Warning: average variance is very small:', mean(Xvar), ', may lead to singular matrix\n')
@@ -42,29 +42,30 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
       cat('Warning: variance of dimension', j, 'is very small:', Xvar[j], ', may lead to singular matrix\n')
     }
   }
-
+  
   X <- t(X)
   Xlogit <- t(Xlogit)
-  mu <- cinit$supp[1:dim,]
+  mu <- cinit$supp[1:dim, , drop=FALSE]
   start_ind <- dim+1
   end_ind <- dim+dim*dim
-  sigma <- array(cinit$supp[start_ind:end_ind,], dim = c(dim, dim, numcmp))
+  sigma <- array(cinit$supp[start_ind:end_ind, , drop=FALSE], dim = c(dim, dim, numcmp))
   a <- cinit$w
   beta <- betainit
-
+  
   minloop <- max(c(MLMoption$minloop, 2))
   maxloop <- max(c(MLMoption$maxloop, 5))
-
+  
   oldloglike <- -1.0e+30
   oldloglikepen <- oldloglike
-
+  
   sigmainv <- array(0, dim = c(dim, dim, numcmp))
   sigmadetsqrt <- rep(0, numcmp)
   for (j in 1:numcmp) {
-    sigmainv[,,j] <- solve(sigma[,,j])
-    sigmadetsqrt[j] <- sqrt(det(sigma[,,j]))
+    sigma_j <- as.matrix(sigma[,,j])  # Prevent dimension drop
+    sigmainv[,,j] <- solve(sigma_j)
+    sigmadetsqrt[j] <- sqrt(det(sigma_j))
   }
-
+  
   loop <- 1
   while (loop < maxloop) {
     pij <- matrix(0, nrow = numdata, ncol = numcmp)
@@ -79,16 +80,16 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
         } else {
           pyij[i,j] <- v1 / (1.0 + v1)
         }
-
+        
         if (MLMoption$Yalpha == 0) {
-          pij[i,j] <- a[j] / sigmadetsqrt[j] * exp(-0.5 * t(X[,i] - mu[,j]) %*% sigmainv[,,j] %*% (X[,i] - mu[,j])) * ((Y[i] * pyij[i,j] + (1 - Y[i]) * (1 - pyij[i,j]))^MLMoption$Ypower)
+          pij[i,j] <- a[j] / sigmadetsqrt[j] * exp(-0.5 * t(as.numeric(X[,i]) - as.numeric(mu[,j])) %*% sigmainv[,,j] %*% (as.numeric(X[,i]) - as.numeric(mu[,j]))) * ((Y[i] * pyij[i,j] + (1 - Y[i]) * (1 - pyij[i,j]))^MLMoption$Ypower)
         } else {
-          pij[i,j] <- a[j] / sigmadetsqrt[j] * exp(-0.5 * t(X[,i] - mu[,j]) %*% sigmainv[,,j] %*% (X[,i] - mu[,j]))
+          pij[i,j] <- a[j] / sigmadetsqrt[j] * exp(-0.5 * t(as.numeric(X[,i]) - as.numeric(mu[,j])) %*% sigmainv[,,j] %*% (as.numeric(X[,i]) - as.numeric(mu[,j])))
           v5 <- Y[i] * pyij[i,j] + (1 - Y[i]) * (1 - pyij[i,j])
           v5 <- exp(MLMoption$Yalpha * (v5 - 0.5)) / (1.0 + exp(MLMoption$Yalpha * (v5 - 0.5)))
           pij[i,j] <- pij[i,j] * v5
         }
-
+        
         if (pij[i,j] >= 0) {
           tmp <- tmp + pij[i,j]
         } else {
@@ -102,7 +103,7 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
           stop('em_MLM: joint density of X, Y, and component should be nonnegative')
         }
       }
-
+      
       for (j in 1:numcmp) {
         if (tmp > 0) {
           pij[i,j] <- pij[i,j] / tmp
@@ -110,22 +111,22 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
           pij[i,j] <- 1 / numcmp
         }
       }
-
+      
       for (j in 1:numcmp) {
         if (!(pij[i,j] >= 0 || pij[i,j] < 0)) {
           cat('pij(', i, ',', j, ') =', pij[i,j], '\n')
           stop('em_MLM: Numerical error with computing posterior pij')
         }
       }
-
+      
       loglike <- loglike + (log(tmp) - dim / 2 * log(2 * pi)) * Wi[i]
     }
-
+    
     pij_wt <- pij
     for (i in 1:numdata) {
       pij_wt[i,] <- pij[i,] * Wi[i]
     }
-
+    
     if (kappa > 0) {
       Wiunit <- Wi / sum(Wi)
       Wientropy <- 0.0
@@ -137,27 +138,27 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
     } else {
       Wientropy <- 0
     }
-
+    
     if (MLMoption$algorithm == 1) {
       penbeta <- MLMoption$AlphaLasso * sum(abs(beta[2:(dimlogit+1),])) + (1 - MLMoption$AlphaLasso) * sum(beta[2:(dimlogit+1),]^2)
       loglikepen <- loglike - sum(lambdaLasso * penbeta) - kappa * Wientropy
     } else {
       loglikepen <- loglike - kappa * Wientropy
     }
-
+    
     if (abs((loglikepen - oldloglikepen) / oldloglikepen) < MLMoption$stopratio && loop > minloop) {
       break
     }
-
+    
     if (loglikepen < oldloglikepen && loop > minloop) {
       #loop
       #print(c(loglike, oldloglike, loglikepen, oldloglikepen))
       break
     }
-
+    
     oldloglike <- loglike
     oldloglikepen <- loglikepen
-
+    
     pj <- colSums(pij_wt)
     a <- pj / sum(pj)
     numnonzero <- sum(!(a > 0))
@@ -168,36 +169,37 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
       cat('a:\n')
       print(a)
     }
-
+    
     muprev <- mu
     sigmaprev <- sigma
     betaprev <- beta
-
+    
     mu <- X %*% pij_wt
     for (j in 1:numcmp) {
       if (pj[j] > 0) {
-        mu[,j] <- mu[,j] / pj[j]
+        mu[,j] <- as.matrix(mu[,j]) / pj[j]
       } else {
         mu[,j] <- muprev[,j]
         cat('Warning: zero prior for component', j, ', Component mean, Covariance, and Beta all set to the same as previous round.\n')
       }
     }
-
+    
     for (j in 1:numcmp) {
       Phi <- matrix(0, nrow = dim, ncol = dim)
       for (i in 1:numdata) {
-        Phi <- Phi + pij_wt[i,j] * (X[,i] - mu[,j]) %*% t(X[,i] - mu[,j])
+        Phi <- Phi + pij_wt[i,j] * (as.numeric(X[,i]) - as.numeric(mu[,j])) %*% t(as.numeric(X[,i]) - as.numeric(mu[,j]))
       }
       if (pj[j] > 0) {
         sigma[,,j] <- Phi / sum(pj[j])
       } else {
         sigma[,,j] <- sigmaprev[,,j]
       }
-      sigma[,,j] <- checksingular(sigma[,,j], Xvar, 0.05)
+      sigma_j <- as.matrix(sigma[,,j])  # Prevent dimension drop
+      sigma[,,j] <- checksingular(sigma_j, Xvar, 0.05)
     }
-
+    
     sigma <- ConstrainSigma(a, sigma, dim, numcmp, Xvar, MLMoption)
-
+    
     for (j in 1:numcmp) {
       if (pj[j] > 0) {
         if (pj[j] >= 3) {
@@ -224,21 +226,22 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
         beta[,j] <- betaprev[,j]
       }
     }
-
+    
     for (j in 1:numcmp) {
-      sigmainv[,,j] <- solve(sigma[,,j])
-      sigmadetsqrt[j] <- sqrt(det(sigma[,,j]))
+      sigma_j <- as.matrix(sigma[,,j])  # Prevent dimension drop
+      sigmainv[,,j] <- solve(sigma_j)
+      sigmadetsqrt[j] <- sqrt(det(sigma_j))
     }
-
+    
     if (kappa > 0) {
       Li <- rep(0, numdata)
       for (i in 1:numdata) {
         for (j in 1:numcmp) {
           v1 <- sum(beta[2:(dimlogit+1),j] * Xlogit[,i]) + beta[1,j]
           if (exp(v1) == Inf) {
-            v2 <- -v1 + Y[i] * v1 + log(a[j]) - log(sigmadetsqrt[j]) - 0.5 * t(X[,i] - mu[,j]) %*% sigmainv[,,j] %*% (X[,i] - mu[,j])
+            v2 <- -v1 + Y[i] * v1 + log(a[j]) - log(sigmadetsqrt[j]) - 0.5 * t(as.numeric(X[,i]) - as.numeric(mu[,j])) %*% sigmainv[,,j] %*% (as.numeric(X[,i]) - as.numeric(mu[,j]))
           } else {
-            v2 <- -log(1 + exp(v1)) + Y[i] * v1 + log(a[j]) - log(sigmadetsqrt[j]) - 0.5 * t(X[,i] - mu[,j]) %*% sigmainv[,,j] %*% (X[,i] - mu[,j])
+            v2 <- -log(1 + exp(v1)) + Y[i] * v1 + log(a[j]) - log(sigmadetsqrt[j]) - 0.5 * t(as.numeric(X[,i]) - as.numeric(mu[,j])) %*% sigmainv[,,j] %*% (as.numeric(X[,i]) - as.numeric(mu[,j]))
           }
           if(a[j] > 0){
             Li[i] <- Li[i] + pij[i,j] * v2
@@ -258,13 +261,13 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
         }
       }
     }
-
-
+    
+    
     loop <- loop + 1
     #print(loglikepen)
-
+    
   }
-
+  
   c = list()
   c$w = a;
   c$supp = matrix(0,nrow = dim+dim*dim,ncol = numcmp)
@@ -274,7 +277,7 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
     end_ind = dim+dim*dim
     c$supp[start_ind:end_ind, i] <- as.vector(sigma[,,i])
   }
-
+  
   result <- list(
     c = c,
     beta = beta,
@@ -282,6 +285,6 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
     loglike = loglike,
     loglikepen = loglikepen
   )
-
+  
   return(result)
 }

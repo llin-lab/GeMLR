@@ -37,12 +37,11 @@ result <- read_data(
 ```r
 # For demonstration only - preprocess example RData
 # If your data is already clean, skip to read_data() directly
-load("data/VASTd0_log.RData") 
+load("data/VASTd0_log.RData")
 dfd0$Vaccine <- ifelse(dfd0$Vaccine == "Vi-TT", 0, 1)
-dfd0$Diagnosis <- NULL
-
+# Diagnosis has been converted to Y column
 result <- read_data(
-  dat = dfd0,          
+  dat = dfd0[, -which(names(dfd0) == "Diagnosis")],
   ycol = "Y",
   Indi_col = "Vaccine"
 )
@@ -56,8 +55,7 @@ result <- read_data(
 
 ```r
 # Example data format
-> head_data <- head(read.table("data/VASTd0_Indi.txt"))
-> head_data
+> head(result$rawdat)
   V1   V2   V3   V4   V5   V6   V7   V8   V9  V10  V11  V12  V13  V14 V15  V16  V17  V18  V19 V20
    0 5.33 1.08 4.11 5.60 1.30 5.32 0.85 5.43 0.85 5.72 1.46 5.72 5.52   1 5.84 4.21 4.05 1.20   0
    1 6.35 1.28 3.89 6.52 1.59 5.90 1.28 6.36 1.26 5.18 1.18 5.35 3.64 0.3 6.23 4.10 3.37 1.18   1
@@ -262,15 +260,11 @@ This example demonstrates three different analysis strategies using the VAST dat
 ### Data Preparation
 
 ```r
-
-# Load and preprocess data
 load("data/VASTd0_log.RData")
 dfd0$Vaccine <- ifelse(dfd0$Vaccine == "Vi-TT", 0, 1)
-dfd0$Diagnosis <- NULL
-
-# Read data using GeMLR
+# Diagnosis has been converted to Y column
 result <- read_data(
-  dat = dfd0,
+  dat = dfd0[, -which(names(dfd0) == "Diagnosis")],
   ycol = "Y",
   Indi_col = "Vaccine"
 )
@@ -284,12 +278,12 @@ Indi <- result$Indi
 
 ### Task 1: Single Feature Analysis with Vaccine Indicator
 
-**Purpose:** Analyze using only the first two features with vaccine indicator.
+**Purpose:** Analyze using only the first features with vaccine indicator.
 
 ```r
-# Use first two features (columns 1-2 in X)
-vargmm_1 <- c(1, 2)
-varreg_1 <- c(1, 2)
+# Use first features (columns 1 in X)
+vargmm_1 <- 1
+varreg_1 <- 1
 
 # Fit initial model
 fit_task1 <- fit_model(
@@ -344,17 +338,6 @@ result_final_1 <- finalModel(
 png("VAST_task1_heatmap.png", width = 10, height = 8, units = "in", res = 300)
 plot_beta_heatmap(result_final_1$beta)
 dev.off()
-```
-
-**Cross-validation results:**
-```r
-> result_cv_1$cvAUCfinal
-         cluster=2 cluster=3 cluster=4
-1 fold    0.5795    0.5000    0.6591
-2 fold    0.5222    0.5333    0.5111
-3 fold    0.6786    0.6161    0.5893
-4 fold    0.9615    0.9231    0.9615
-5 fold    0.5313    0.4792    0.5417
 ```
 
 ### Task 2: Feature Grouping Strategy
@@ -421,17 +404,6 @@ plot_beta_heatmap(result_final_2$beta)
 dev.off()
 ```
 
-**Cross-validation results:**
-```r
-> result_cv_2$cvAUCfinal
-         cluster=2 cluster=3 cluster=4
-1 fold    0.6705    0.6364    0.6023
-2 fold    0.4556    0.5556    0.5556
-3 fold    0.6786    0.5536    0.5625
-4 fold    0.8846    0.8077    0.8462
-5 fold    0.5521    0.6042    0.6562
-```
-
 ### Task 3: Top Variable Features
 
 **Purpose:** Select top 5 most variable features from all available features for GMM, use all features for logistic regression.
@@ -493,17 +465,6 @@ result_final_3 <- finalModel(
 png("VAST_task3_heatmap.png", width = 10, height = 10, units = "in", res = 300)
 plot_beta_heatmap(result_final_3$beta)
 dev.off()
-```
-
-**Cross-validation results:**
-```r
-> result_cv_3$cvAUCfinal
-         cluster=2 cluster=3 cluster=4
-1 fold    0.9091    0.6932    0.4432
-2 fold    0.6222    0.6111    0.5778
-3 fold    0.5536    0.5714    0.5893
-4 fold    0.8462    0.7692    0.8462
-5 fold    0.5625    0.7083    0.5000
 ```
 
 ---

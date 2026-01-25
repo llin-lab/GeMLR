@@ -2,7 +2,7 @@
 % Please edit documentation in R/checksingular.R
 \name{checksingular}
 \alias{checksingular}
-\title{check singular}
+\title{check singular (Modified to support single feature)}
 \usage{
 checksingular(sigma, Xvar, shrinkrate)
 }
@@ -17,5 +17,7 @@ checksingular(sigma, Xvar, shrinkrate)
 the new singular sigma matrix
 }
 \description{
-Check whether covariance matrix is ill-conditioned or nearly singular. If so, regularize covariance by changing the diagonal elements.
+Check whether covariance matrix is ill-conditioned or nearly singular.
+If so, regularize covariance by changing the diagonal elements.
+MODIFIED: Added support for 1x1 matrices (single feature case)
 }

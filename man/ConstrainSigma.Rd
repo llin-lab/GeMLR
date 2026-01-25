@@ -4,7 +4,7 @@
 \alias{ConstrainSigma}
 \title{ConstrainSigma}
 \usage{
-ConstrainSigma(a, sigma, dim, numcmp, Xvar, MLMoption)
+ConstrainSigma(a, sigma, ndim, numcmp, Xvar, MLMoption)
 }
 \value{
 sigmaout

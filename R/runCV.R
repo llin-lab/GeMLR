@@ -46,12 +46,12 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
   library(caret)
   library(pROC)
   
-  # Validate vargmm (must have at least 2 features for GMM)
-  if (any(ncmp > 1) && length(vargmm) < 2) {
-    warning("GeMLR GMM requires at least 2 features (length(vargmm) >= 2).\n",
-            "Single-feature GMM causes covariance matrix degeneracy.\n",
-            "Consider using vargmm with 2+ features or setting ncmp = 1.")
-  }
+  # Validate vargmm (DISABLED - single feature now supported afte r fixing checksingular and ConstrainSigma)
+  # if (any(ncmp > 1) && length(vargmm) < 2) {
+  #   warning("GeMLR GMM requires at least 2 features (length(vargmm) >= 2).\n",
+  #           "Single-feature GMM causes covariance matrix degeneracy.\n",
+  #           "Consider using vargmm with 2+ features or setting ncmp = 1.")
+  # }
   
   lcmp <- length(ncmp)
   dimgmm <- length(vargmm)

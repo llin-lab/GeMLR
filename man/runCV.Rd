@@ -10,6 +10,7 @@ runCV(
   nseeds = 20,
   rangeSeed = 30,
   vargmm,
+  varreg = NULL,
   vlasso,
   Y,
   X,
@@ -34,6 +35,8 @@ runCV(
 \item{rangeSeed}{the largest number among random seeds}
 
 \item{vargmm}{the index of variables that are used in gmm (must select >= 2 features)}
+
+\item{varreg}{(optional) the index of variables used in logistic regression. If NULL, uses all variables}
 
 \item{vlasso}{Lambda for Lasso penalty}
 
@@ -77,5 +80,6 @@ CRITICAL FIXES:
 \item GeMLR GMM cannot handle single-feature clustering (covariance degeneracy)
 \item For single-feature tasks, use vargmm = c(1, 2) or K = 1
 }
+\item Added p_safe processing: Ensures predicted probabilities are in \link{0, 1}
 }
 }

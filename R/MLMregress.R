@@ -16,23 +16,26 @@ MLMclassify <- function(a, mu, sigma, beta, X, Xlogit) {
   dim <- ncol(X)
   dimlogit <- ncol(Xlogit)
   numcmp <- length(a)
-
+  
   sigmainv <- array(0, dim = c(dim, dim, numcmp))
   sigmadetsqrt <- numeric(numcmp)
-
+  
   for (j in 1:numcmp) {
-    sigmainv[,,j] <- solve(sigma[,,j])
-    sigmadetsqrt[j] <- sqrt(det(sigma[,,j]))
+    # Force matrix format to prevent dimension drop for 1x1 case
+    sigma_j <- as.matrix(sigma[,,j])
+    sigmainv[,,j] <- solve(sigma_j)
+    sigmadetsqrt[j] <- sqrt(det(sigma_j))
   }
-
+  
   pij <- matrix(0, nrow = numdata, ncol = numcmp)
   pyij <- matrix(0, nrow = numdata, ncol = numcmp)
   pyi <- numeric(numdata)
-
+  
   for (i in 1:numdata) {
     tmp <- 0.0
     for (j in 1:numcmp) {
-      pij[i, j] <- a[j] / sigmadetsqrt[j] * exp(-0.5 * t(as.numeric(X[i,] - mu[,j])) %*% sigmainv[,,j] %*% as.numeric(X[i,] - mu[,j]))
+      sigmainv_j <- as.matrix(sigmainv[,,j])
+      pij[i, j] <- a[j] / sigmadetsqrt[j] * exp(-0.5 * t(as.numeric(X[i,] - mu[,j])) %*% sigmainv_j %*% as.numeric(X[i,] - mu[,j]))
       if (pij[i, j] >= 0) {
         tmp <- tmp + pij[i, j]
       } else {
@@ -43,7 +46,7 @@ MLMclassify <- function(a, mu, sigma, beta, X, Xlogit) {
         stop('MLMclassify: Joint density of X and the component should be nonnegative')
       }
     }
-
+    
     for (j in 1:numcmp) {
       if (tmp > 0) {
         pij[i, j] <- pij[i, j] / tmp
@@ -51,14 +54,14 @@ MLMclassify <- function(a, mu, sigma, beta, X, Xlogit) {
         pij[i, j] <- 1 / numcmp
       }
     }
-
+    
     for (j in 1:numcmp) {
       v1 <- sum(Xlogit[i,] * beta[2:(dimlogit+1), j]) + beta[1, j]
       pyij[i, j] <- v1
     }
-
+    
     pyi[i] <- sum(pij[i,] * pyij[i,])
   }
-
+  
   return(list(pyi = pyi, pij = pij))
 }

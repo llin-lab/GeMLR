@@ -47,7 +47,7 @@ finalModel(
 
 \item{Indi}{the dummy variables}
 
-\item{varreg}{(optional) Variables for logistic regression. If NULL, uses vargmm}
+\item{varreg}{(optional) Variables for logistic regression. If NULL, uses all variables}
 
 \item{alphaLasso}{Elastic net parameter (default 0.8)}
 
