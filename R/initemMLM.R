@@ -117,7 +117,6 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
     numdata_small <- sum(cd1 == j)
     Ysmall <- Y[cd1 == j]
     Xsmall <- Xlogit[cd1 == j, , drop = FALSE]
-    numdata_small <- sum(cd1 == j)
     if (numdata_small >= 3) {
 
   fit <- glmnet(
