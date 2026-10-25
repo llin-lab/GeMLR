@@ -140,9 +140,18 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
     }
     
     if (MLMoption$algorithm == 1) {
-      penbeta <- MLMoption$AlphaLasso * sum(abs(beta[2:(dimlogit+1),])) + (1 - MLMoption$AlphaLasso) * sum(beta[2:(dimlogit+1),]^2)
+
+      beta_no_intercept <- beta[2:(dimlogit + 1), , drop = FALSE]
+
+      penbeta <- MLMoption$AlphaLasso *
+         colSums(abs(beta_no_intercept)) +
+         (1 - MLMoption$AlphaLasso) *
+         colSums(beta_no_intercept^2)
+
       loglikepen <- loglike - sum(lambdaLasso * penbeta) - kappa * Wientropy
-    } else {
+
+     } else {
+
       loglikepen <- loglike - kappa * Wientropy
     }
     
