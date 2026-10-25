@@ -1,17 +1,17 @@
-#' MLM classify
+#' MLM regress
 #' @description
-#' classify based on a given MLM model
+#' regression prediction based on a given MLM model
 #'
 #' @param a the weight of each cluster
 #' @param mu the mean of each cluster
 #' @param sigma the sigma matrix of each cluster
-#' @param beta the logistic coefficients of each cluster
+#' @param beta the regression coefficients of each cluster
 #' @param X all non-dummy feature variables
 #' @param Xlogit all feature variables
 #'
-#' @return P(Y=1|given X) and P(Z=c cluster|given X)
+#' @return E(Y|given X) and P(Z=c cluster|given X)
 #' @export
-MLMclassify <- function(a, mu, sigma, beta, X, Xlogit) {
+MLMregress <- function(a, mu, sigma, beta, X, Xlogit) {
   numdata <- nrow(X)
   dim <- ncol(X)
   dimlogit <- ncol(Xlogit)
@@ -43,7 +43,7 @@ MLMclassify <- function(a, mu, sigma, beta, X, Xlogit) {
         warning(sprintf('sigmadetsqrt(%d)=%f', j, sigmadetsqrt[j]))
         print(sprintf('Data point %d:', i))
         print(X[i,])
-        stop('MLMclassify: Joint density of X and the component should be nonnegative')
+        stop('MLMregress: Joint density of X and the component should be nonnegative')
       }
     }
     
