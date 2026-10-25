@@ -72,8 +72,15 @@ estimateBestSD <- function(X, Xlogit, Y, MLMoption, seedlist) {
       pyihard <- pyi > 0.5
       accuracy[ii] <- sum(Y == pyihard) / length(Y)
 
-      auc_result <- roc(Y, pyi, levels = c(0,1))
-      AUC[ii] <- auc_result$auc
+      auc_result <- pROC::roc(
+          response = Y,
+          predictor = pyi,
+          levels = c(0, 1),
+          direction = "<",
+          quiet = TRUE
+       )
+
+      AUC[ii] <- as.numeric(pROC::auc(auc_result))
     }else{
       regress_result <- MLMregress(a2, mu2, sigma2, beta, X, Xlogit)
       accuracy[ii] <- sum((pyi - t(Y))^2) / length(Y)  # MSE for regression
