@@ -144,7 +144,14 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
       pyi[!is.finite(pyi)] <- NA
       pyi <- pmin(pmax(pyi, eps), 1 - eps)
       
-      auc <- as.numeric(pROC::auc(Ytt, pyi))
+      auc <- as.numeric(
+         pROC::auc(
+         response = Ytt,
+         predictor = pyi,
+         levels = c(0, 1),
+         direction = "<"
+         )
+      )
       cvAUCfinal[ifold, jj] <- auc
     }
   }
