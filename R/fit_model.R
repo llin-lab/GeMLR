@@ -61,11 +61,11 @@ fit_model <- function(X, Xs, Y, Indi = NULL,
       stop("VS must be a positive integer or NA")
     }
     
-    pool_data <- Xs[, vargmm_pool_idx, drop = FALSE]
+    pool_data <- X_raw[, vargmm_pool_idx, drop = FALSE]
     pool_vars <- apply(pool_data, 2, var, na.rm = TRUE)
     
     n_select <- min(VS, length(vargmm_pool_idx))
-    top_positions <- order(pool_vars, decreasing = TRUE)[1:n_select]
+    top_positions <- order(pool_vars, decreasing = TRUE)[seq_len(n_select)]
     idx_gmm <- vargmm_pool_idx[top_positions]
   }
   
