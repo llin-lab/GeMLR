@@ -59,6 +59,7 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
       km_result <- kmRmEmpty(X, numcmp, cdbk)
       cdbk <- km_result$cdbk
       cd1 <- km_result$ind
+      ndatpercls <- tabulate(cd1, nbins = numcmp)
     }
     
     kmseed <- kmseed + ii
@@ -117,14 +118,14 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
     numdata_small <- sum(cd1 == j)
     Ysmall <- Y[cd1 == j]
     Xsmall <- Xlogit[cd1 == j, , drop = FALSE]
-    if (numdata_small >= 3) {
+    if (numdata_small >= 3 && min(sum(Ysmall == 1), sum(Ysmall == 0)) >= 2) {
 
-  fit <- glmnet(
-    Xsmall,
-    Ysmall,
-    family = MLMoption$DISTR,
-    lambda = MLMoption$lambdaLasso[j],
-    alpha = MLMoption$AlphaLasso
+    fit <- glmnet(
+     Xsmall,
+     Ysmall,
+     family = MLMoption$DISTR,
+     lambda = MLMoption$lambdaLasso[j],
+     alpha = MLMoption$AlphaLasso
   )
 
   beta[, j] <- c(
