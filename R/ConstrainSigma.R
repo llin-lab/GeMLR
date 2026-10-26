@@ -79,7 +79,7 @@ ConstrainSigma <- function(a, sigma, dim, numcmp, Xvar, MLMoption) {
   if (ncode == 2) {
     sigmaout <- array(0, dim = dim(sigma))
     for (j in 1:numcmp) {
-      sigmaout[,,j] <- mean(diag(sigma[,,j])) * diag(rep(1, dim))
+        sigmaout[,,j] <- mean(diag(matrix(sigma[,,j], dim, dim))) * diag(dim)
     }
     return(sigmaout)
   }
@@ -93,26 +93,26 @@ ConstrainSigma <- function(a, sigma, dim, numcmp, Xvar, MLMoption) {
   }
   
   vscale <- numeric(numcmp)
-  V <- array(0, dim = c(dim, dim, numcmp))
-  D <- array(0, dim = c(dim, dim, numcmp))
+  V <- array(0, dim = c(dim, dim, numcmp + 1))
+  D <- array(0, dim = c(dim, dim, numcmp + 1))
   
   for (j in 1:numcmp) {
-    eig_result <- eigen(sigma[,,j])
+    eig_result <- eigen(matrix(sigma[,,j], dim, dim), symmetric = TRUE)
     V[,,j] <- eig_result$vectors
-    D[,,j] <- diag(eig_result$values)
-    vscalelog <- sum(log(diag(D[,,j])))
-    if (any(diag(D[,,j]) <= 0)) {
+    D[,,j] <- diag(eig_result$values, nrow = dim)
+    vscalelog <- sum(log(diag(matrix(D[,,j], dim, dim))))
+    if (any(diag(matrix(D[,,j], dim, dim)) <= 0)) {
       stop("ConstrainSigma: Error\n")
     }
     vscale[j] <- exp(vscalelog / dim)
     D[,,j] <- D[,,j] / vscale[j]
   }
   
-  eig_result <- eigen(sigmaave)
+  eig_result <- eigen(sigmaave, symmetric = TRUE)
   V[,,numcmp + 1] <- eig_result$vectors
-  D[,,numcmp + 1] <- diag(eig_result$values)
-  vscalelog <- sum(log(diag(D[,,numcmp + 1])))
-  if (any(diag(D[,,numcmp + 1]) <= 0)) {
+  D[,,numcmp + 1] <- diag(eig_result$values, nrow = dim)
+  vscalelog <- sum(log(diag(matrix(D[,,numcmp + 1], dim, dim))))
+  if (any(diag(matrix(D[,,numcmp + 1], dim, dim)) <= 0)) {
     stop("ConstrainSigma: Error\n")
   }
   vscaleave <- exp(vscalelog / dim)
@@ -121,13 +121,13 @@ ConstrainSigma <- function(a, sigma, dim, numcmp, Xvar, MLMoption) {
   sigmaout <- array(0, dim = dim(sigma))
   if (ncode == 8) {
     for (j in 1:numcmp) {
-      sigmaout[,,j] <- vscaleave * V[,,j] %*% D[,,numcmp + 1] %*% t(V[,,j])
+        sigmaout[,,j] <- vscaleave * matrix(V[,,j], dim, dim) %*% matrix(D[,,numcmp + 1], dim, dim) %*% t(matrix(V[,,j], dim, dim))
     }
   }
   
   if (ncode == 9) {
     for (j in 1:numcmp) {
-      sigmaout[,,j] <- vscale[j] * V[,,j] %*% D[,,numcmp + 1] %*% t(V[,,j])
+        sigmaout[,,j] <- vscale[j] * matrix(V[,,j], dim, dim) %*% matrix(D[,,numcmp + 1], dim, dim) %*% t(matrix(V[,,j], dim, dim))
     }
   }
   
