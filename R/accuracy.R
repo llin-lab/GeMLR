@@ -8,11 +8,11 @@ accuracy <- function(pi, mu, Sigma, index) {
   k <- ncol(mu)
   D <- array(0, dim = c(k, k, num))
 
-  pi <- t(pi)
+  pi <- as.numeric(pi)
   Acc <- matrix(0, k, num)
   delta_ncnc <- matrix(0, k, num)
 
-  for (s in 1:num) {
+  for (s in seq_len(num)) {
     index1 <- index[s, ]
     index1 <- index1[index1 != 0]
 
@@ -23,15 +23,14 @@ accuracy <- function(pi, mu, Sigma, index) {
       }
     }
 
-    E <- D[, , s] - diag(diag(D[, , s]))
-    dcc <- 1 / (1 - pi) * (E %*% pi)
-    Delta_c <- dcc / diag(D[, , s])
+    Ds <- matrix(D[, , s], k, k)
+    E <- Ds - diag(diag(Ds), nrow = k)
+    dcc <- as.numeric(E %*% pi) / (1 - pi)
+    Delta_c <- dcc / diag(Ds)
 
     for (i in 1:k) {
-      Dsub <- D[, , s]
-      Dsub <- Dsub[-i, -i]
-      pisub <- pi
-      pisub[i] <- 0
+      Dsub <- Ds[-i, -i, drop = FALSE]
+      pisub <- pi[-i]
 
       delta_ncnc[i, s] <- (1 / (1 - pi[i])^2) * sum(Dsub * outer(pisub, pisub))
     }
