@@ -4,7 +4,7 @@
 \alias{VS}
 \title{VS}
 \usage{
-VS(comp, a2, mu2, sigma2, dimgmm)
+VS(comp, a2, mu2, sigma2, dimgmm = nrow(mu2), vargmm = NULL, varnames = NULL)
 }
 \arguments{
 \item{comp}{use vs on which components}
@@ -15,10 +15,18 @@ VS(comp, a2, mu2, sigma2, dimgmm)
 
 \item{sigma2}{the covariance matrix of each cluster}
 
-\item{dimgmm}{dimensions of gmm}
+\item{dimgmm}{dimensions of gmm (defaults to \code{nrow(mu2)})}
+
+\item{vargmm}{optional; the column indices (or names) of X used for the GMM, in the order they were fit
+(e.g. \code{fit$vargmm}). Used to map selected positions back to columns of X.}
+
+\item{varnames}{optional; names of the columns of X (e.g. \code{colnames(X)}).}
 }
 \value{
-a list of information about the explainable variables
+a list with \code{varsel} (positions within the GMM variables, i.e. rows of \code{mu2},
+in selection order), \code{varsel_col} (corresponding columns of X; NULL unless \code{vargmm} is given),
+\code{varsel_name} (from \code{varnames} if \code{vargmm} is given, otherwise from \code{rownames(mu2)};
+NULL if neither) and \code{wm} (accuracy of the selected subset)
 }
 \description{
 variable selection for Gaussian mixtured model.
