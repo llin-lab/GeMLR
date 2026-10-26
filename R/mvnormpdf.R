@@ -12,10 +12,8 @@ mvnormpdf <- function(x, mu, Sigma) {
 
   C <- chol(Sigma)
 
-  e <- backsolve(C, x - matrix(mu, nrow = length(mu), ncol = n), transpose = TRUE)
-
-  pdf <- exp(-colSums(e * e) / 2) /
-    (prod(diag(C)) * (2 * pi)^(p / 2))
+  e <- solve(t(C)) %*% (x - matrix(mu, nrow = length(mu), ncol = n))
+  pdf <- exp(-colSums(e * e) / 2) / (prod(diag(C)) * (2 * pi)^(p / 2))
 
   return(pdf)
 }
