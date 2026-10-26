@@ -11,29 +11,24 @@
 #' @return a list of information about the explainable variables
 #' @export
 
+
 VS <- function(comp, a2, mu2, sigma2, dimgmm) {
-
-
-  index <- creatindex(dimgmm, dimgmm - 1)
-  Acc <- accuracy(a2, mu2, sigma2, index)
-
+  index <- creatindex(dimgmm, dimgmm - 1)             # requires the item-3 fix
+  Acc <- accuracy(a2, mu2, sigma2, index)$Acc         # A: take the matrix
   Accfull <- Acc[, 1]
-  Acc <- Acc[, -1]
-  wm <- max(Acc[comp, ])
-  vm <- which.max(Acc[comp, ])
+  Acc <- Acc[, -1, drop = FALSE]                      # keep k x d even if d = 1
+  vm <- which.max(Acc[comp, ]); wm <- Acc[comp, vm]
   varsel <- index[vm + 1, 1]
   remain <- setdiff(1:dimgmm, varsel)
   Accref <- 0.01
-
   while ((wm - Accref) / Accref > 0.1 && abs(wm - Accfull[comp]) > 0.01) {
     Accref <- wm
-    index <- t(combn(c(varsel, remain), length(varsel) + 1))
-    Acc <- accuracy(a2, mu2, sigma2, index)
-    wm <- max(Acc[comp, ])
-    vm <- which.max(Acc[comp, ])
+    index <- cbind(matrix(varsel, nrow = length(remain),          # B: rows [varsel, r]
+                          ncol = length(varsel), byrow = TRUE), remain)
+    Acc <- accuracy(a2, mu2, sigma2, index)$Acc
+    vm <- which.max(Acc[comp, ]); wm <- Acc[comp, vm]
     varsel <- index[vm, ]
     remain <- setdiff(1:dimgmm, varsel)
   }
-
-  return(list(varsel = varsel, wm = wm))
+  list(varsel = varsel, wm = wm)
 }
