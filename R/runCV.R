@@ -140,9 +140,9 @@ runCV <- function(k=5, ncmp=c(2,3,4), nseeds=20, rangeSeed=30,
       pyi <- mlm[[1]]
       
       # Ensure probabilities are in valid range [0, 1]
-      %eps <- 1e-12
-      %pyi[!is.finite(pyi)] <- NA
-      %pyi <- pmin(pmax(pyi, eps), 1 - eps)
+      #eps <- 1e-12
+      #pyi[!is.finite(pyi)] <- NA
+      #pyi <- pmin(pmax(pyi, eps), 1 - eps)
       
       auc <- as.numeric(
          pROC::auc(
