@@ -30,7 +30,13 @@ estimate <- function(X, Xlogit, Y, MLMoption) {
       pij <- classify_result$pij
       pyihard <- pyi > 0.5
       cat('Classification accuracy by initial model (within training):', sum(Y == pyihard) / length(Y), '\n')
-      auc_result <- roc(Y, pyi)
+      auc_result <- pROC::roc(
+         response = Y,
+         predictor = pyi,
+         levels = c(0, 1),
+         direction = "<",
+         quiet = TRUE
+       )
       AUC <- auc_result$auc
       cat('Classification AUC by initial model (within training):', AUC, '\n')
     }else{
@@ -88,7 +94,13 @@ estimate <- function(X, Xlogit, Y, MLMoption) {
     if (MLMoption$verbose > 0) {
       pyihard <- pyi > 0.5
       cat('Classification accuracy after EM (within training):', sum(Y == pyihard) / length(Y), '\n')
-      auc_result <- roc(Y, pyi) # default: 0 represents control group
+      auc_result <- pROC::roc(
+        response = Y,
+        predictor = pyi,
+        levels = c(0, 1),
+        direction = "<",
+        quiet = TRUE
+      ) # default: 0 represents control group
       AUC <- auc_result$auc
       cat('Classification AUC after EM (within training):', AUC, '\n')
     }
