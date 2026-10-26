@@ -110,9 +110,15 @@ finalModel <- function(cvAUCfinal, ncmp, nseeds, rangeSeed,
   mu2 <- gmm_result$mu
   sigma2 <- gmm_result$sigma
   
+  gmm_names <- if (is.character(vargmm)) vargmm else colnames(Xs)[vargmm]
+  if (!is.null(gmm_names)) {
+    rownames(mu2) <- gmm_names
+    dimnames(sigma2) <- list(gmm_names, gmm_names, NULL)
+  }
+  
   classify_result <- MLMclassify(a2, mu2, sigma2, beta, Xs[, vargmm, drop = FALSE], Xlogit)
   pij <- classify_result$pij
   clusterid <- apply(pij, 1, which.max)
   
-  return(list(beta = as.matrix(beta), clusterid = clusterid, a2 = a2, mu2 = mu2, sigma2 = sigma2))
+  return(list(beta = as.matrix(beta), clusterid = clusterid, a2 = a2, mu2 = mu2, sigma2 = sigma2, vargmm = vargmm))
 }
