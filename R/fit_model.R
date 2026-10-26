@@ -197,6 +197,13 @@ fit_model <- function(X, Xs, Y, Indi = NULL,
   # -- Normal path: convert GMM results and classify
   gmm <- GMMFormatConvert(dimgmm, est$c)
   a2 <- gmm$a; mu2 <- gmm$mu; sigma2 <- gmm$sigma
+  
+  gmm_names <- colnames(Xs)[idx_gmm]
+  if (!is.null(gmm_names)) {
+    rownames(mu2) <- gmm_names
+    dimnames(sigma2) <- list(gmm_names, gmm_names, NULL)
+  }
+  
   beta <- est$beta
   rn <- c("Intercept", colnames(Xlogit))
   rownames(beta) <- rn[seq_len(nrow(beta))]
