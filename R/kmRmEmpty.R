@@ -35,10 +35,9 @@ kmRmEmpty <- function(dat,nkm,cdbkinit){
 
   numempty = sum(ndatpercls==0)
   if (numempty == 0){
-    return(invisible(NA))
+      return(list(cdbk = cdbk, ind = as.vector(ind)))
   }
 
-  ptdist = sort(ptdist,decreasing = TRUE)
   id2 = order(ptdist,decreasing = TRUE)
 
   ii=1
@@ -68,5 +67,5 @@ kmRmEmpty <- function(dat,nkm,cdbkinit){
     return(invisible(NA))
   }
 
-  return(list(cdbk = cdbk,ind=ind))
+return(list(cdbk = cdbk, ind = as.vector(ind)))
 }
