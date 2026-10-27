@@ -215,10 +215,8 @@ em_MLM <- function(X, Xlogit, Y, cinit, betainit, MLMoption) {
           if (MLMoption$algorithm == 1) {
             # cat('the iteration in em_MLM is:',j,'\n')
             
-            fit <- glmnet(t(Xlogit), Y, family = MLMoption$DISTR,  weights = pij_wt[,j],alpha = MLMoption$AlphaLasso, lambda = lambdaLasso[j])
-            beta_nonintercept = as.matrix(fit$beta)
-            
-            beta[,j] <- rbind(fit$a0, beta_nonintercept)
+            beta[, j] <- fit_lasso(t(Xlogit), Y, pij_wt[, j], MLMoption$AlphaLasso, lambdaLasso[j],
+                      MLMoption$DISTR, fallback = betaprev[, j])
           } else {
             weights <- pij_wt[, j] / pj[j]
             Xlogit_transposed <- t(Xlogit)
