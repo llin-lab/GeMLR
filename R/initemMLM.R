@@ -120,18 +120,9 @@ initemMLM <- function(X, Xlogit, Y, MLMoption) {
     Xsmall <- Xlogit[cd1 == j, , drop = FALSE]
     if (numdata_small >= 3 && min(sum(Ysmall == 1), sum(Ysmall == 0)) >= 2) {
 
-    fit <- glmnet(
-     Xsmall,
-     Ysmall,
-     family = MLMoption$DISTR,
-     lambda = MLMoption$lambdaLasso[j],
-     alpha = MLMoption$AlphaLasso
-  )
-
-  beta[, j] <- c(
-    as.numeric(fit$a0),
-    as.numeric(fit$beta)
-  )
+    beta[, j] <- fit_lasso(Xsmall, Ysmall, rep(1, length(Ysmall)), MLMoption$AlphaLasso,
+                MLMoption$lambdaLasso[j], MLMoption$DISTR,
+                  fallback = glmIntercept(Ysmall, rep(1, length(Ysmall)), dimlogit, MLMoption$DISTR))
 
 } else {
 
